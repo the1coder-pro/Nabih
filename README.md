@@ -17,9 +17,6 @@
 - https://docs.virustotal.com/docs/api-overview
 
 ---
-# المهمات
-- واجهات
-
 
 
 # اسماء المشروع
