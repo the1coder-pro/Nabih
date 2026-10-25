@@ -9,6 +9,8 @@
     "48": "Lock.png",
     "128": "Lock.png"
   },
+  "host_permissions": ["https://api.mail.tm/*"],
+  "background": { "service_worker": "tempMail.js" },
   "action": {
     "default_icon": {
       "16": "Lock.png",

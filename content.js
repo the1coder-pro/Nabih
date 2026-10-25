@@ -105,6 +105,134 @@ function fillPassword(targetInput, value) {
   navigator.clipboard.writeText(value).catch(() => {});
 }
 
+// ============================================================
+// نبيه | البريد المؤقت (mail.tm) — داخل تنبيه البريد الإلكتروني
+// ============================================================
+
+// علبة الرسائل داخل التلميح المنبثق (تُفرّغ وتُعبأ عند كل فتح)
+function createTempMailBlock(targetInput) {
+  const box = document.createElement("div");
+  box.className = "nabih-tm-box";
+  box.dir = "ltr";
+  box.innerHTML = `
+    <div class="nabih-tm-head">
+      <strong>📧 بريد مؤقت</strong>
+      <button type="button" class="nabih-tm-copy" title="نسخ العنوان">📋</button>
+    </div>
+    <div class="nabih-tm-address" title="اضغط لنسخ العنوان">لم يتم الإنشاء بعد</div>
+    <div class="nabih-tm-actions">
+      <button type="button" class="nabih-pwd-fill nabih-tm-create">إنشاء بريد مؤقت</button>
+      <button type="button" class="nabih-focus-btn nabih-tm-inbox" disabled>تحديث الصندوق</button>
+    </div>
+    <div class="nabih-tm-meta">
+      <span class="nabih-tm-count">0 رسالة</span>
+      <span class="nabih-tm-status"></span>
+    </div>
+    <div class="nabih-tm-messages"></div>
+    <div class="nabih-tm-note">مفعّل بواسطة mail.tm — بريد عام مؤقت</div>
+  `;
+
+  const addrEl = box.querySelector(".nabih-tm-address");
+  const metaCount = box.querySelector(".nabih-tm-count");
+  const metaStatus = box.querySelector(".nabih-tm-status");
+  const createBtn = box.querySelector(".nabih-tm-create");
+  const inboxBtn = box.querySelector(".nabih-tm-inbox");
+  const msgBox = box.querySelector(".nabih-tm-messages");
+  let address = null;
+
+  function status(text, ok) {
+    metaStatus.textContent = text || "";
+    metaStatus.style.color = ok === false ? "#f87171" : "#34d399";
+  }
+
+  function render(list = []) {
+    metaCount.textContent = list.length + " رسالة" + (list.length === 0 || list.length === 1 ? "" : "ات");
+    msgBox.innerHTML = list.length ? "" : '<div class="nabih-tm-empty">الصندوق فارغ</div>';
+    list.forEach(m => {
+      const row = document.createElement("div");
+      row.className = "nabih-tm-msg" + (m.seen ? "" : " nabih-tm-unread");
+      row.innerHTML = `<strong>${m.subject || "(بدون موضوع)"}</strong>
+        <small>${m.from?.address || ""}</small>`;
+      row.onclick = async () => {
+        status("جاري القراءة…");
+        const r = await chrome.runtime.sendMessage({ type: "read", id: m.id });
+        if (r?.ok) {
+          targetInput.value = m.subject.includes("كود") || m.subject.includes("رمز") || m.subject.includes("code")
+              ? (r.data.text || "").match(new RegExp(String.raw`\b\d{4,8}\b`))?.[0] || r.data.text || ""
+              : r.data.text || "";
+          targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+          navigator.clipboard.writeText(r.data.text || "").catch(() => {});
+          row.classList.remove("nabih-tm-unread");
+          status("تم النسخ");
+        } else {
+          status("خطأ: " + (r?.error || "لا استجابة"), false);
+        }
+      };
+      msgBox.appendChild(row);
+    });
+  }
+
+  createBtn.onclick = async (e) => {
+    e.stopPropagation();
+    createBtn.disabled = true;
+    status("جاري الإنشاء…");
+    try {
+      const r = await chrome.runtime.sendMessage({ type: "create" });
+      if (!r?.ok) throw new Error(r?.error || "لا استجابة");
+      address = r.data.address;
+      addrEl.textContent = address;
+      addrEl.title = "اضغط لنسخ العنوان";
+      addrEl.classList.add("nabih-tm-has");
+      inboxBtn.disabled = false;
+      targetInput.value = address;
+      targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+      await chrome.storage.local.set({ nabihTempMail: address });
+      status("تم الإنشاء");
+      inboxBtn.click();
+    } catch (err) {
+      status("خطأ: " + err.message, false);
+    } finally {
+      createBtn.disabled = false;
+    }
+  };
+
+  inboxBtn.onclick = async (e) => {
+    e.stopPropagation();
+    if (!address) return;
+    status("جاري التحديث…");
+    try {
+      const r = await chrome.runtime.sendMessage({ type: "inbox" });
+      if (!r?.ok) throw new Error(r?.error || "لا استجابة");
+      render(r.data);
+      status("تم التحديث");
+    } catch (err) {
+      status("خطأ: " + err.message, false);
+    }
+  };
+
+  const copy = async () => {
+    if (!address) return;
+    await navigator.clipboard.writeText(address).catch(() => {});
+    status("تم نسخ العنوان");
+  };
+  addrEl.onclick = e => { e.stopPropagation(); copy(); };
+  box.querySelector(".nabih-tm-copy").onclick = e => { e.stopPropagation(); copy(); };
+
+  // استعادة العنوان السابق عند فتح التلميح
+  chrome.storage.local.get("nabihTempMail", ({ nabihTempMail }) => {
+    if (nabihTempMail) {
+      address = nabihTempMail;
+      addrEl.textContent = address;
+      addrEl.classList.add("nabih-tm-has");
+      inboxBtn.disabled = false;
+      metaCount.textContent = "0 رسالة";
+      status("تم استعادة العنوان");
+    }
+  });
+
+  return box;
+}
+
 // عنصر مولد كلمة المرور مع خيارات الطول والأحرف والأرقام والرموز
 function createPwdBlock(targetInput, onDone) {
   const box = document.createElement("div");
@@ -257,14 +385,20 @@ function showTooltip(badge, item) {
     <div class="nabih-tooltip-desc">${cfg.tip}</div>
   `;
 
-  if (cfg.isPassword) {
-    tip.appendChild(createPwdBlock(item.input, hideTooltip));
-  }
-
   const bRect = badge.getBoundingClientRect();
   tip.style.top = `${bRect.bottom + 6}px`;
   tip.style.left = `${Math.max(10, Math.min(bRect.left, window.innerWidth - 290))}px`;
   tip.classList.add("visible");
+
+  // مولّد كلمة المرور يظهر مع حقول كلمة المرور
+  if (cfg.isPassword) {
+    tip.appendChild(createPwdBlock(item.input, hideTooltip));
+  }
+
+  // البريد المؤقت يظهر فقط مع حقول البريد الإلكتروني
+  if (item.type === "email") {
+    tip.appendChild(createTempMailBlock(item.input));
+  }
 }
 
 // ضبط موضع الزر
@@ -338,6 +472,10 @@ function updateSidebarContent() {
       <strong>${cfg.icon} ${cfg.title}</strong>
       <p>${cfg.tip}</p>
     `;
+
+    if (item.type === "email") {
+      card.appendChild(createTempMailBlock(item.input));
+    }
 
     if (cfg.isPassword) {
       card.appendChild(createPwdBlock(item.input, null));
@@ -479,12 +617,25 @@ if (typeof chrome !== "undefined" && chrome.runtime?.onMessage) {
       settings = { ...settings, ...msg.settings };
       applyDisplayMode();
       sendResponse({ success: true });
+
     } else if (msg.type === "GET_PAGE_STATS") {
       sendResponse({
         domain: window.location.hostname,
         formsCount: detectedFormsCount,
         fieldsCount: detectedFields.length
       });
+
+    } else if (msg.type === "fillEmail") {
+      // تُستخدم بواسطة زر "تعبئة الحقل في الصفحة" في نافذة الإضافة
+      const item = detectedFields.find(i => i.type === "email");
+      if (item) {
+        item.input.value = msg.value;
+        item.input.dispatchEvent(new Event("input", { bubbles: true }));
+        item.input.dispatchEvent(new Event("change", { bubbles: true }));
+        item.input.focus();
+        item.input.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      sendResponse({ ok: !!item });
     }
     return true;
   });
@@ -517,3 +668,5 @@ if (typeof chrome !== "undefined" && chrome.storage?.sync) {
 } else {
   init();
 }
+
+

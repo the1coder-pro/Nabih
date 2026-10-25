@@ -342,3 +342,42 @@
 }
 
 .nabih-sidebar-toggle:hover { background: #0369a1; }
+
+/* --- البريد المؤقت داخل تلميح البريد --- */
+.nabih-tm-box {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.nabih-tm-head { display: flex; align-items: center; justify-content: space-between; }
+.nabih-tm-head strong { color: #38bdf8; font-size: 12px; }
+.nabih-tm-copy {
+  background: #334155; border: 1px solid #475569; color: #f8fafc;
+  border-radius: 5px; padding: 2px 7px; cursor: pointer; font-size: 12px;
+}
+.nabih-tm-address {
+  background: #0f172a; border: 1px solid #475569; color: #94a3b8;
+  border-radius: 5px; padding: 6px 8px; font-family: monospace;
+  font-size: 11.5px; word-break: break-all; cursor: pointer; text-align: left;
+}
+.nabih-tm-address.nabih-tm-has { color: #4cc9f0; }
+.nabih-tm-actions { display: flex; gap: 6px; }
+.nabih-tm-actions button { flex: 1; }
+.nabih-tm-actions .nabih-focus-btn { padding: 6px; font-size: 11px; }
+.nabih-tm-meta { display: flex; justify-content: space-between; font-size: 10.5px; color: #94a3b8; }
+.nabih-tm-status { color: #34d399; }
+.nabih-tm-messages { display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; }
+.nabih-tm-msg {
+  background: #0f172a; border: 1px solid #334155; border-radius: 5px;
+  padding: 6px 8px; cursor: pointer; font-size: 11px;
+}
+.nabih-tm-msg:hover { border-color: #38bdf8; }
+.nabih-tm-msg.nabih-tm-unread { border-right: 2px solid #38bdf8; }
+.nabih-tm-msg strong { color: #f1f5f9; display: block; margin-bottom: 2px; }
+.nabih-tm-msg small { color: #94a3b8; font-size: 10px; }
+.nabih-tm-empty { color: #64748b; font-size: 11px; text-align: center; padding: 4px; }
+.nabih-tm-note { color: #64748b; font-size: 10px; line-height: 1.4; }

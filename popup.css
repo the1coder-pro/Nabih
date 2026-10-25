@@ -1,3 +1,10 @@
+:root {
+  --surface: #1e293b;
+  --border: #334155;
+  --accent: #38bdf8;
+  --muted: #94a3b8;
+}
+
 /* ============================================================
    نبيه | Nabih - أنماط واجهة الإضافة (Popup CSS)
    ============================================================ */
@@ -265,3 +272,38 @@ input:checked + .slider:before {
   color: #64748b;
   padding-top: 4px;
 }
+
+.temp-mail-block { margin-top: 18px; border-top: 1px dashed var(--border, #2a3345); padding-top: 16px; }
+
+.temp-mail-address {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; min-height: 44px; padding: 10px 14px; margin: 12px 0;
+  background: var(--surface, #0f1420); border: 1px solid var(--border, #2a3345);
+  border-radius: 12px; font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 13px; word-break: break-all; color: var(--accent, #4cc9f0);
+  text-align: center; direction: ltr;
+}
+.temp-mail-placeholder { color: var(--muted, #7b8494); font-family: inherit; }
+
+.temp-mail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.temp-mail-actions .nabih-pwd-fill,
+.temp-mail-actions .nabih-focus-btn,
+.temp-mail-actions .nabih-copy-btn { width: 100%; }
+
+.temp-mail-messages {
+  display: flex; flex-direction: column; gap: 8px; max-height: 220px;
+  overflow-y: auto; margin-bottom: 10px;
+}
+.temp-mail-msg {
+  padding: 10px 12px; background: var(--surface, #0f1420);
+  border: 1px solid var(--border, #2a3345); border-radius: 10px;
+  cursor: pointer; transition: border-color .15s;
+}
+.temp-mail-msg:hover { border-color: var(--accent, #4cc9f0); }
+.temp-mail-msg.unread { border-right: 3px solid var(--accent, #4cc9f0); }
+.temp-mail-msg strong { display: block; font-size: 13px; margin-bottom: 4px; }
+.temp-mail-msg p { font-size: 12px; color: var(--muted, #7b8494); margin: 0; }
+.temp-mail-msg small { font-size: 11px; color: var(--muted, #7b8494); }
+
+.temp-mail-note { font-size: 11px; color: var(--muted, #7b8494); line-height: 1.6; }
+.temp-mail-note a { color: var(--accent, #4cc9f0); text-decoration: none; }
