@@ -61,6 +61,7 @@ function detectFieldType(input) {
   if (type === "password") return "password";
   if (type === "email") return "email";
   if (type === "tel") return "phone";
+  
 
   const attrs = `${input.name || ""} ${input.id || ""} ${input.placeholder || ""} ${input.autocomplete || ""}`.toLowerCase();
   if (/\b(password|pwd|secret|كلمة المرور|السر)\b/i.test(attrs) && !/\bpassport\b/i.test(attrs)) return "password";
