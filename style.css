@@ -401,7 +401,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  font-family: system-ui, -apple-system, sans-serif;
+   font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-weight: 400;
+  font-style: normal;
 }
 .nabih-tm-head { display: flex; align-items: center; justify-content: space-between; }
 .nabih-tm-head strong { color: #38bdf8; font-size: 12px; }

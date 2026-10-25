@@ -670,7 +670,7 @@ function updateSidebarContent() {
   if (!sidebarEl) return;
 
   sidebarEl.innerHTML = `
-    <div class="nabih-sidebar-head">
+    <div class="nabih-sidebar-head ibm-plex-sans-arabic-regular">
       <strong>🔒 نبيه | لوحة التنبيهات</strong>
       <button type="button" class="nabih-sidebar-close">✕</button>
     </div>
