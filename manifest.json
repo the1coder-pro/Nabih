@@ -1,33 +1,39 @@
 {
-  "name": "Nabih",
-  "description": "Nabih ynabhik",
-  "version": "1.0",
   "manifest_version": 3,
+  "name": "نبيه | Nabih",
+  "version": "1.0.0",
+  "description": "نبيه ينبهك - تنبيهات توعوية ذكية باللغة العربية عند فتح نماذج التسجيل وإدخال البيانات الحساسة",
+  "icons": {
+    "16": "Lock.png",
+    "32": "Lock.png",
+    "48": "Lock.png",
+    "128": "Lock.png"
+  },
   "action": {
-     "16": "Lock.png",
+    "default_icon": {
+      "16": "Lock.png",
       "32": "Lock.png",
       "48": "Lock.png",
       "128": "Lock.png"
-    
+    },
+    "default_popup": "popup.html",
+    "default_title": "نبيه | حارس الوعي والبيانات"
   },
-  "permissions": ["activeTab", "scripting"],
-  "background": {
-    "service_worker": "background.js"
-  },
-   "commands": {
-    "_execute_action": {
-      "suggested_key": {
-        "default": "Ctrl+B",
-        "mac": "Command+B"
-      }
-    }},
-    "content_scripts": [
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "content_scripts": [
     {
+      "matches": ["<all_urls>"],
       "js": ["content.js"],
-      "run_at": "document_idle",
-      "matches": [
-      "<all_urls>"
-      ]
+      "css": ["style.css"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["Lock.png"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

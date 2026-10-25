@@ -1,0 +1,344 @@
+/* ============================================================
+   نبيه | Nabih - أنماط خفيفة وبسيطة وغير معقدة
+   ============================================================ */
+
+/* --- إشعار نموذج التسجيل (Toast) --- */
+.nabih-toast {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483647;
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 12px 14px;
+  max-width: 360px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  direction: rtl;
+  text-align: right;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nabih-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.nabih-toast-header strong {
+  color: #38bdf8;
+  font-size: 13px;
+  flex: 1;
+}
+
+.nabih-toast-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.nabih-toast-close:hover { color: #ffffff; }
+
+.nabih-toast-text {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+/* --- الأزرار الملتصقة بالحقول (Badges) --- */
+.nabih-badge {
+  position: absolute;
+  z-index: 99999;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  user-select: none;
+  direction: rtl;
+  white-space: nowrap;
+}
+
+.nabih-badge:hover { filter: brightness(0.95); }
+.nabih-badge-password { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.nabih-badge-email { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.nabih-badge-phone, .nabih-badge-username { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+.nabih-badge.compact { padding: 2px 5px; }
+.nabih-badge.compact .nabih-badge-text { display: none; }
+
+/* --- نافذة الإرشادات المنبثقة (Tooltip) --- */
+.nabih-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 2147483647;
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  width: 275px;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  direction: rtl;
+  text-align: right;
+}
+
+.nabih-tooltip.visible { display: block; }
+
+.nabih-tooltip-title {
+  font-weight: 700;
+  color: #38bdf8;
+  font-size: 12.5px;
+  margin-bottom: 5px;
+}
+
+.nabih-tooltip-desc {
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+/* --- صندوق مولّد كلمات المرور --- */
+.nabih-pwd-box {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #334155;
+}
+
+.nabih-pwd-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.nabih-pwd-val {
+  flex: 1;
+  background: #0f172a;
+  border: 1px solid #475569;
+  color: #f8fafc;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  outline: none;
+  text-align: center;
+  direction: ltr;
+}
+
+.nabih-pwd-refresh {
+  background: #334155;
+  border: 1px solid #475569;
+  color: #ffffff;
+  border-radius: 5px;
+  padding: 0 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.nabih-pwd-refresh:hover { background: #475569; }
+
+.nabih-pwd-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: #cbd5e1;
+}
+
+.nabih-pwd-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nabih-pwd-slider-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 55px;
+  font-size: 11px;
+}
+
+.nabih-len-val {
+  color: #38bdf8;
+  font-family: monospace;
+  font-size: 12px;
+}
+
+.nabih-pwd-slider {
+  flex: 1;
+  height: 4px;
+  cursor: pointer;
+  accent-color: #0284c7;
+  background: #334155;
+  border-radius: 4px;
+  outline: none;
+}
+
+.nabih-pwd-checks {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.nabih-pwd-chk {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 10.5px;
+  color: #94a3b8;
+}
+
+.nabih-pwd-chk input {
+  cursor: pointer;
+  accent-color: #0284c7;
+  margin: 0;
+}
+
+.nabih-pwd-fill {
+  width: 100%;
+  background: #059669;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  padding: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.nabih-pwd-fill:hover { background: #047857; }
+
+/* --- الشريط الجانبي الكامل (Sidebar) --- */
+.nabih-sidebar {
+  position: fixed;
+  top: 0;
+  right: -320px;
+  width: 300px;
+  height: 100vh;
+  background: #0f172a;
+  color: #f8fafc;
+  z-index: 2147483646;
+  transition: right 0.25s ease;
+  display: none;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, sans-serif;
+  border-left: 1px solid #334155;
+  direction: rtl;
+  text-align: right;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.25);
+}
+
+.nabih-sidebar.open { right: 0; }
+
+.nabih-sidebar-head {
+  padding: 12px 14px;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nabih-sidebar-head strong {
+  color: #38bdf8;
+  font-size: 13.5px;
+}
+
+.nabih-sidebar-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.nabih-sidebar-close:hover { color: #ffffff; }
+
+.nabih-sidebar-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nabih-sidebar-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 10px;
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nabih-sidebar-card strong { color: #f1f5f9; }
+.nabih-sidebar-card p { margin: 0; color: #cbd5e1; font-size: 11.5px; line-height: 1.4; }
+
+.nabih-card-password { border-right: 3px solid #10b981; }
+.nabih-card-email { border-right: 3px solid #f59e0b; }
+.nabih-card-phone, .nabih-card-username { border-right: 3px solid #3b82f6; }
+
+.nabih-focus-btn {
+  background: #334155;
+  border: 1px solid #475569;
+  color: #38bdf8;
+  border-radius: 5px;
+  padding: 5px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-top: 4px;
+  font-family: inherit;
+}
+
+.nabih-focus-btn:hover { background: #475569; }
+
+.nabih-sidebar-empty {
+  text-align: center;
+  padding: 24px 10px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* زر إظهار الشريط الجانبي */
+.nabih-sidebar-toggle {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  background: #0284c7;
+  color: #ffffff;
+  padding: 8px 10px;
+  border-radius: 6px 0 0 6px;
+  border: none;
+  z-index: 2147483645;
+  cursor: pointer;
+  display: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, sans-serif;
+  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
+  user-select: none;
+}
+
+.nabih-sidebar-toggle:hover { background: #0369a1; }

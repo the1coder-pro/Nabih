@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نبيه | Nabih</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-wrapper">
+    <!-- الترويسة الرئيسية والشعار -->
+    <header class="popup-header">
+      <div class="brand">
+        <img src="Lock.png" alt="شعار نبيه" class="logo">
+        <div class="brand-text">
+          <h1>نبيه <span>Nabih</span></h1>
+          <p class="tagline">حارس الوعي والبيانات الرقمية</p>
+        </div>
+      </div>
+      <div class="status-indicator">
+        <span class="status-pulse"></span>
+        <span class="status-label">الحماية نشطة</span>
+      </div>
+    </header>
+
+    <!-- بطاقة الوصف والتعريف بالإضافة -->
+    <section class="description-card">
+      <p>
+        إضافة أمنية توعوية ذكية تحميك أثناء التصفح من خلال تنبيهك عند إدخال بياناتك الشخصية في نماذج التسجيل، وتساعدك في إنشاء كلمات مرور فائقة القوة.
+      </p>
+    </section>
+
+    <!-- إحصائيات الصفحة الحالية -->
+    <section class="page-stats-card">
+      <div class="stats-head">
+        <span class="stats-icon">🌐</span>
+        <span class="stats-domain" id="siteDomain">جاري الفحص...</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <span class="stat-number" id="formsCount">0</span>
+          <span class="stat-name">نماذج تسجيل</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number" id="fieldsCount">0</span>
+          <span class="stat-name">حقول حساسة</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- خيارات وإعدادات طريقة العرض -->
+    <section class="settings-card">
+      <h2 class="settings-title">⚙️ طريقة عرض التنبيهات</h2>
+
+      <div class="display-modes">
+        <label class="mode-option" id="modeInlineLabel">
+          <input type="radio" name="displayMode" value="inline" id="modeInline" checked>
+          <div class="mode-content">
+            <div class="mode-header">
+              <span class="mode-icon">📍</span>
+              <strong>بجانب الحقول مباشرة</strong>
+            </div>
+            <p class="mode-desc">أزرار تحذيرية ذكية تظهر ملاصقة لكل حقل إدخال (كالبريد وكلمات المرور).</p>
+          </div>
+        </label>
+
+        <label class="mode-option" id="modeSidebarLabel">
+          <input type="radio" name="displayMode" value="sidebar" id="modeSidebar">
+          <div class="mode-content">
+            <div class="mode-header">
+              <span class="mode-icon">📑</span>
+              <strong>في شريط جانبي كامل</strong>
+            </div>
+            <p class="mode-desc">تجميع كل الإرشادات ومولّد كلمات المرور في لوحة جانبية كاملة على طرف الصفحة.</p>
+          </div>
+        </label>
+      </div>
+
+      <!-- خيار تفعيل إشعار النماذج -->
+      <div class="toggle-option">
+        <div class="toggle-info">
+          <strong>إشعار عند فتح نموذج التسجيل</strong>
+          <span class="toggle-desc">تنبيه فوري عند فتح صفحات تسجيل الدخول أو إنشاء الحساب</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggleFormNotification" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </section>
+
+    <!-- تذييل الصفحة -->
+    <footer class="popup-footer">
+      <span>نبيه ينبهك لحماية بياناتك • الإصدار 1.0</span>
+      <span>انتاج فريق نخلة</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
