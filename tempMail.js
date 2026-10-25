@@ -59,27 +59,67 @@ const handlers = {
   async inbox() {
     const { nabihTempToken } = await chrome.storage.local.get("nabihTempToken");
     if (!nabihTempToken) throw new Error("لم يتم إنشاء بريد بعد");
-    const box = await request("/messages", {
+    // صفحة واحدة = حتى 30 رسالة (حسب المستند)؛ العدد الكلي في hydra:totalItems
+    const box = await request("/messages?page=1", {
       headers: { Authorization: `Bearer ${nabihTempToken}` }
     });
-    // mail.tm يُرجع تجميعة Hydra؛ البيانات الحقيقية في hydra:member
-    const list = (box && box["hydra:member"]) || [];
-    return list.map(m => ({
-      id: m.id,
-      subject: m.subject || "",
-      from: m.from || {},
-      seen: !!m.seen,
-      intro: m.intro || ""
-    }));
+    const member = (box && box["hydra:member"]) || [];
+    const total = box && typeof box["hydra:totalItems"] === "number" ? box["hydra:totalItems"] : member.length;
+    return {
+      full: true,                       // إشارة: هذه ملخصات الصفحة الأولى
+      total,                           // العدد الكلي (قد يكون > 30)
+      items: member.slice(0, 30).map(m => ({
+        id: m.id,
+        subject: m.subject || "",
+        from: m.from || {},
+        seen: !!m.seen,
+        intro: m.intro || "",           // مقتطف من النص/الأتش تي ام أل (في الملخص فقط)
+        hasAttachments: !!m.hasAttachments,
+        createdAt: m.createdAt || "",
+        isDeleted: !!m.isDeleted
+      }))
+    };
   },
 
   async read({ id }) {
     const { nabihTempToken } = await chrome.storage.local.get("nabihTempToken");
     if (!nabihTempToken) throw new Error("لم يتم إنشاء بريد بعد");
-    return request(`/messages/${id}`, {
+    const full = await request(`/messages/${id}`, {
       headers: { Authorization: `Bearer ${nabihTempToken}` }
     });
-    // -> { text: "...", html: "...", subject, from, ... }
+
+    // html قد يكون مصفوفة من السلاسل (حسب المستند) — ندمجه كنص واحد
+    const htmlArr = Array.isArray(full.html) ? full.html : (full.html ? [full.html] : []);
+    const html = htmlArr.join("\n");
+    const text = full.text || "";
+
+    // روابط التحقق: من الأتش تي ام أولاً (href)، ثم من النص (عنوان كامل)
+    const out = [];
+    const seen = new Set();
+    const add = (u) => {
+      try { const x = String(u); if (!x || x.startsWith("#") || x.startsWith("mailto:")) return; new URL(x); } catch { return; }
+      if (!seen.has(u)) { seen.add(u); out.push(u); }
+    };
+    (html.match(/<a\s[^>]*href\s*=\s*["']([^"']+)["'][^>]*>/gi) || [])
+      .map(a => { const m = a.match(/href\s*=\s*["']([^"']+)["']/i); return m ? m[1] : ""; }).filter(Boolean).forEach(add);
+    (html.match(/https?:\/\/[^\\<"'\s]+/g) || []).forEach(add);   // \  للـ escape داخل النمط
+    (text.match(/https?:\/\/[^\s<>"']+/g) || []).forEach(add);
+
+    // كود التحقق (OTP): رقم 4-8 خانات، نستبعد الأرقام التي داخل روابط التحقق
+    // (توكن الرابط ليس كوداً) — الأولوية لـ 4-6 خانات لأنها الأشيع لـ OTP
+    let code = null;
+    const linkBlob = out.join("\n");
+    const tokens = [...new Set((text.match(/\b\d{4,8}\b/g) || []).filter(t => !linkBlob.includes(t)))];
+    code = tokens.find(t => /^\d{4,6}$/.test(t)) || tokens.find(t => /^\d{7,8}$/.test(t)) || null;
+
+    return {
+      ...full,
+      html, text,          // html نصي متصل (وليس مصفوفة)، يسهل عرضه وتصفحه
+      intro: full.intro || "",
+      links: out,          // كل الروابط المطلقة (الأتش تي ام أولاً)
+      code                 // كود التحقق المستخلص، أو null
+    };
+    // -> { text, html, links, code, intro, subject, from, attachments, verifications, ... }
   },
 
   async remove({ id }) {

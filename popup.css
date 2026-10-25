@@ -307,3 +307,30 @@ input:checked + .slider:before {
 
 .temp-mail-note { font-size: 11px; color: var(--muted, #7b8494); line-height: 1.6; }
 .temp-mail-note a { color: var(--accent, #4cc9f0); text-decoration: none; }
+/* جسم الرسالة الكاملة: روابط قابلة للنقر + كود التحقق + النص */
+.temp-mail-body { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border, #334155); }
+.temp-mail-links { display: flex; flex-direction: column; gap: 5px; }
+.temp-mail-link {
+  display: block; word-break: break-all; font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px; color: var(--accent, #4cc9f0); text-decoration: none;
+  background: #0f172a; border: 1px solid var(--border, #334155); border-radius: 6px;
+  padding: 6px 8px;
+}
+.temp-mail-link:hover { border-color: var(--accent, #4cc9f0); background: rgba(56,189,248,.08); }
+.temp-mail-code {
+  font-family: ui-monospace, SFMono-Regular, monospace; font-size: 20px; font-weight: 700;
+  letter-spacing: 4px; text-align: center; color: #fbbf24;
+  background: #0f172a; border: 1px dashed #f59e0b; border-radius: 8px; padding: 8px;
+  cursor: pointer; user-select: all;
+}
+.temp-mail-code:hover { background: rgba(245,158,11,.12); }
+.temp-mail-pre {
+  max-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; line-height: 1.5;
+  color: var(--muted, #94a3b8); background: #0f172a; border: 1px solid var(--border, #334155);
+  border-radius: 6px; padding: 8px; margin: 0;
+}
+.temp-mail-status {
+  min-height: 16px; font-size: 11px; color: #34d399; text-align: center;
+  padding: 4px 0; word-break: break-word;
+}

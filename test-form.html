@@ -115,6 +115,33 @@
 
       <button type="submit">تسجيل الدخول / إنشاء حساب</button>
     </form>
+
+    <!-- نموذج دفع تجريبي: لاختبار ميزة تنبيه صفحات الدفع -->
+    <div class="badge" style="background:#ffedd5;color:#9a3412">💳 اختبار تنبيه الدفع</div>
+    <h2>صفحة الدفع التجريبية</h2>
+    <p class="subtitle">هذا القسم يحاكي صفحة الدفع. إضافة نبيه يجب أن تكتشف الحقول وتظهر تنبيهاً (بطاقة إضافية).</p>
+
+    <form id="checkout-form" action="/checkout" method="POST">
+      <div class="form-group">
+        <label for="cc-name">اسم صاحب البطاقة</label>
+        <input type="text" id="cc-name" name="card_name" placeholder="كما هي على البطاقة" autocomplete="cc-name" />
+      </div>
+      <div class="form-group">
+        <label for="cc-number">رقم البطاقة (Card Number)</label>
+        <input type="text" id="cc-number" name="card_number" inputmode="numeric" placeholder="4111 1111 1111 1111" autocomplete="cc-number" />
+      </div>
+      <div class="form-group" style="display:flex;gap:12px;">
+        <div style="flex:1;">
+          <label for="cc-exp">تاريخ الانتهاء (MM/YY)</label>
+          <input type="text" id="cc-exp" name="card_exp" placeholder="12/27" autocomplete="cc-exp" />
+        </div>
+        <div style="flex:1;">
+          <label for="cc-cvc">رمز الأمان (CVV)</label>
+          <input type="password" id="cc-cvc" name="card_cvc" placeholder="•••" autocomplete="cc-csc" />
+        </div>
+      </div>
+      <button type="submit">ادفع الآن (Pay Now)</button>
+    </form>
   </div>
 
   <script src="content.js"></script>
