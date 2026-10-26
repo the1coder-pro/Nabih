@@ -194,6 +194,7 @@ function createTempMailBlock(targetInput) {
     <div class="nabih-tm-address" title="اضغط لنسخ العنوان">لم يتم الإنشاء بعد</div>
     <div class="nabih-tm-actions">
       <button type="button" class="nabih-pwd-fill nabih-tm-create">إنشاء بريد مؤقت</button>
+      <button type="button" class="nabih-focus-btn nabih-tm-fill" disabled title="تعبئة العنوان في هذا الحقل">⬇️ تعبئة الحقل</button>
       <button type="button" class="nabih-focus-btn nabih-tm-inbox" disabled>تحديث الصندوق</button>
     </div>
     <div class="nabih-tm-meta">
@@ -208,6 +209,7 @@ function createTempMailBlock(targetInput) {
   const metaCount = box.querySelector(".nabih-tm-count");
   const metaStatus = box.querySelector(".nabih-tm-status");
   const createBtn = box.querySelector(".nabih-tm-create");
+  const fillBtn = box.querySelector(".nabih-tm-fill");
   const inboxBtn = box.querySelector(".nabih-tm-inbox");
   const msgBox = box.querySelector(".nabih-tm-messages");
   let address = null;
@@ -216,6 +218,18 @@ function createTempMailBlock(targetInput) {
     metaStatus.textContent = text || "";
     metaStatus.style.color = ok === false ? "#f87171" : "#34d399";
   }
+
+  const fillField = async (e) => {
+    if (e) e.stopPropagation();
+    if (!address) return;
+    targetInput.value = address;
+    targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+    targetInput.dispatchEvent(new Event("change", { bubbles: true }));
+    targetInput.focus();
+    await navigator.clipboard.writeText(address).catch(() => {});
+    status("تمت تعبئة البريد في الحقل", true);
+  };
+  fillBtn.onclick = fillField;
 
   function render(list = []) {
     // list قد يكون مصفوفة (توافق قديم) أو {items, total, full} من المعالج الجديد
@@ -328,10 +342,12 @@ function createTempMailBlock(targetInput) {
       addrEl.title = "اضغط لنسخ العنوان";
       addrEl.classList.add("nabih-tm-has");
       inboxBtn.disabled = false;
+      fillBtn.disabled = false;
       targetInput.value = address;
       targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+      targetInput.dispatchEvent(new Event("change", { bubbles: true }));
       await chrome.storage.local.set({ nabihTempMail: address });
-      status("تم الإنشاء");
+      status("تم الإنشاء والتعبئة", true);
       inboxBtn.click();
     } catch (err) {
       status("خطأ: " + err.message, false);
@@ -369,6 +385,7 @@ function createTempMailBlock(targetInput) {
       addrEl.textContent = address;
       addrEl.classList.add("nabih-tm-has");
       inboxBtn.disabled = false;
+      fillBtn.disabled = false;
       metaCount.textContent = "0 رسالة";
       status("تم استعادة العنوان");
     }

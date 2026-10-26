@@ -213,8 +213,17 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!currentAddress) return;
       const [tab] = await api.tabs.query({ active: true, currentWindow: true });
       if (tab?.id) {
-        api.tabs.sendMessage(tab.id, { type: "fillEmail", value: currentAddress }, () => {
+        api.tabs.sendMessage(tab.id, { type: "fillEmail", value: currentAddress }, (resp) => {
           void api.runtime?.lastError;
+          if (statusEl) {
+            if (resp?.ok) {
+              statusEl.textContent = "✓ تم تعبئة البريد في الصفحة";
+              statusEl.style.color = "#34d399";
+            } else {
+              statusEl.textContent = "لم يتم العثور على حقل بريد في الصفحة";
+              statusEl.style.color = "#f87171";
+            }
+          }
         });
       }
     };

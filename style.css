@@ -417,9 +417,23 @@
   font-size: 11.5px; word-break: break-all; cursor: pointer; text-align: left;
 }
 .nabih-tm-address.nabih-tm-has { color: #4cc9f0; }
-.nabih-tm-actions { display: flex; gap: 6px; }
-.nabih-tm-actions button { flex: 1; }
+.nabih-tm-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.nabih-tm-actions button { flex: 1; min-width: 75px; }
 .nabih-tm-actions .nabih-focus-btn { padding: 6px; font-size: 11px; }
+.nabih-tm-actions .nabih-tm-fill {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+.nabih-tm-actions .nabih-tm-fill:hover:not(:disabled) {
+  background: #059669;
+  border-color: #10b981;
+  color: #ffffff;
+}
+.nabih-tm-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 .nabih-tm-meta { display: flex; justify-content: space-between; font-size: 10.5px; color: #94a3b8; }
 .nabih-tm-status { color: #34d399; }
 .nabih-tm-messages { display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; }
