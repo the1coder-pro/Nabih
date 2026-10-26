@@ -141,7 +141,7 @@
   padding: 12px;
   border-radius: 8px;
   font-size: 12px;
-  width: 275px;
+  width: 360px;   /* كانت 275px — أوسع لعرض رسائل البريد بشكل صحيح */
   border: 1px solid #334155;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   direction: rtl;
@@ -436,14 +436,19 @@
 }
 .nabih-tm-meta { display: flex; justify-content: space-between; font-size: 10.5px; color: #94a3b8; }
 .nabih-tm-status { color: #34d399; }
-.nabih-tm-messages { display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; }
+.nabih-tm-messages { display: flex; flex-direction: column; gap: 5px; max-height: 260px; overflow-y: auto; }
 .nabih-tm-msg {
   background: #0f172a; border: 1px solid #334155; border-radius: 5px;
   padding: 6px 8px; cursor: pointer; font-size: 11px;
 }
 .nabih-tm-msg:hover { border-color: #38bdf8; }
 .nabih-tm-msg.nabih-tm-unread { border-right: 2px solid #38bdf8; }
-.nabih-tm-msg strong { color: #f1f5f9; display: block; margin-bottom: 2px; }
+.nabih-tm-msg strong { color: #f1f5f9; display: block; margin-bottom: 2px; word-break: break-word; }
+.nabih-tm-intro {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; color: #94a3b8; font-size: 10.5px; margin: 0 0 2px;
+  word-break: break-word; line-height: 1.5;
+}
 .nabih-tm-msg small { color: #94a3b8; font-size: 10px; }
 .nabih-tm-empty { color: #64748b; font-size: 11px; text-align: center; padding: 4px; }
 .nabih-tm-note { color: #64748b; font-size: 10px; line-height: 1.4; }

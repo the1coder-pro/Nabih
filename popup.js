@@ -323,59 +323,80 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setAddress(addr) {
     currentAddress = addr;
-    if (mailAddressEl) mailAddressEl.innerHTML = `<span dir="ltr">${addr}</span>`;
+    if (mailAddressEl) {
+      mailAddressEl.textContent = "";
+      const s = document.createElement("span");
+      s.dir = "ltr";
+      s.textContent = addr;
+      mailAddressEl.appendChild(s);
+    }
     [btnRefreshInbox, btnCopyMail, btnFillTab].forEach((el) => {
       if (el) el.disabled = false;
     });
     if (mailCountEl) mailCountEl.textContent = "0";
   }
 
-  function renderMessageBody(row, full, code, links) {
-    let body = row.querySelector(".temp-mail-body");
-    if (body) body.remove();
-    body = document.createElement("div");
-    body.className = "temp-mail-body";
+  function setStatus(text, ok) {
+    if (!statusEl) return;
+    statusEl.textContent = text || "";
+    statusEl.style.color = ok === false ? "#f87171" : "#34d399";
+  }
 
-    if (code) {
-      const c = document.createElement("div");
-      c.className = "temp-mail-code";
-      c.textContent = code;
-      c.title = "انقر لنسخ كود التحقق";
-      c.onclick = async (e) => {
-        e.stopPropagation();
-        await navigator.clipboard.writeText(code);
-        if (statusEl) statusEl.textContent = `✓ ${code}`;
-      };
-      body.appendChild(c);
+  function openLink(url) {
+    try {
+      if (api.tabs?.create) api.tabs.create({ url, active: false });
+      else window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) { /* تجاهل */ }
+  }
+
+  async function copyText(value) {
+    if (!value) return false;
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch (e) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = value;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        return true;
+      } catch (e2) { return false; }
     }
+  }
 
-    if (links.length) {
-      const lb = document.createElement("div");
-      lb.className = "temp-mail-links";
-      links.forEach((u) => {
-        const a = document.createElement("a");
-        a.className = "temp-mail-link";
-        a.href = u;
-        a.textContent = u.length > 60 ? u.slice(0, 57) + "…" : u;
-        a.title = u;
-        a.target = "_blank";
-        a.rel = "noopener noreferrer";
-        a.onclick = (e) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(u);
-          if (statusEl) statusEl.textContent = "✓ تم نسخ الرابط";
-        };
-        lb.appendChild(a);
-      });
-      body.appendChild(lb);
-    }
+  // يعرض جسم الرسالة كاملاً داخل إطار معزول وآمن (بدون اقتطاع، بدون كود HTML خام)
+  // نقر ثانٍ على الصف يطوي الرسالة
+  function renderMessageBody(row, m, full, onDeleted) {
+    const existing = row.querySelector(".nb-mv-view");
+    if (existing) { existing.remove(); return null; }
 
-    const pre = document.createElement("pre");
-    pre.className = "temp-mail-pre";
-    pre.textContent = (full.html || full.text || "").replace(/\s+\n/g, "\n").trim().slice(0, 4000);
-    body.appendChild(pre);
+    const renderer = (typeof window !== "undefined") ? window.NabihMail : null;
+    if (!renderer) { setStatus("عارض الرسائل غير محمّل", false); return null; }
 
-    row.appendChild(body);
+    const view = renderer.createView(full, {
+      height: 300,
+      expandedHeight: 540,
+      onStatus: (t) => setStatus(t),
+      onOpen: openLink,
+      onDelete: async (msg) => {
+        await callApi("remove", { id: msg.id });
+        row.remove();
+        if (mailCountEl) {
+          const txt = String(mailCountEl.textContent || "");
+          const n = parseInt(txt.split("من")[0].replace(/\D/g, ""), 10);
+          if (!isNaN(n) && n > 0) mailCountEl.textContent = String(n - 1);
+        }
+        setStatus("تم حذف الرسالة");
+        if (onDeleted) onDeleted();
+      }
+    });
+    row.appendChild(view);
+    return view;
   }
 
   async function callApi(type, payload = {}) {
@@ -403,25 +424,50 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnRefreshInbox) {
     btnRefreshInbox.onclick = async () => {
       btnRefreshInbox.disabled = true;
+      if (mailListEl) mailListEl.innerHTML = '<div class="temp-mail-msg">جارٍ تحميل الصندوق…</div>';
       try {
         const list = await callApi("inbox");
-        if (mailCountEl) mailCountEl.textContent = String(list.length);
+        const items = Array.isArray(list) ? list : (list.items || []);
+        const total = (list && list.total) ? list.total : items.length;
+        if (mailCountEl) {
+          mailCountEl.textContent = (total && total > items.length)
+            ? `${items.length} من ${total}` : String(items.length);
+        }
         if (mailListEl) {
-          mailListEl.innerHTML = list.length ? "" : '<div class="temp-mail-msg">الصندوق فارغ</div>';
-          const total = list.total && list.total !== list.length ? list.total : null;
-          if (mailCountEl) mailCountEl.textContent = total ? `${list.length}+/${total}` : String(list.length);
+          mailListEl.innerHTML = "";
+          if (!items.length) {
+            mailListEl.innerHTML = '<div class="temp-mail-msg">الصندوق فارغ</div>';
+          }
 
-          const items = Array.isArray(list) ? list : (list.items || []);
           items.forEach((m) => {
             const row = document.createElement("div");
             row.className = "temp-mail-msg" + (m.seen ? "" : " unread");
 
-            const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : "";
-            row.innerHTML = `<strong>${m.subject || "(بدون موضوع)"}</strong>` +
-              `<p>${m.intro ? m.intro + "…" : ""}</p>` +
-              `<small>${m.from?.address || ""}${time ? " • " + time : ""}${m.hasAttachments ? " 📎" : ""}</small>`;
+            const time = m.createdAt
+              ? new Date(m.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })
+              : "";
+
+            // بناء الصف بعناصر DOM نصية (لا innerHTML) → لا يمكن لمحتوى الرسالة تخريب النافذة
+            const title = document.createElement("strong");
+            title.dir = "auto";
+            title.textContent = m.subject || "(بدون موضوع)";
+
+            const intro = document.createElement("p");
+            intro.dir = "auto";
+            intro.className = "temp-mail-intro";
+            intro.textContent = (m.intro || "").trim();
+
+            const meta = document.createElement("small");
+            meta.dir = "auto";
+            meta.textContent = [m.from?.address || "", time, m.hasAttachments ? "📎 مرفق" : ""]
+              .filter(Boolean).join("  •  ");
+
+            row.appendChild(title);
+            if (intro.textContent) row.appendChild(intro);
+            row.appendChild(meta);
 
             let cache = null;
+            let autoOpened = false;
             const ensureFull = async () => {
               if (cache) return cache;
               const full = await callApi("read", { id: m.id });
@@ -431,25 +477,38 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             row.onclick = async (ev) => {
+              // أي نقرة داخل العارض (أزرار/روابط) لا تُطوي الرسالة
+              if (ev.target.closest && ev.target.closest(".nb-mv-view")) return;
               try {
+                setStatus("جاري قراءة الرسالة…");
                 const full = await ensureFull();
-                ev.preventDefault();
                 const links = Array.isArray(full.links) ? full.links : [];
                 const code = full.code || null;
+
+                // طيّ/فتح بالنقر المتكرر على الصف
+                if (row.querySelector(".nb-mv-view")) {
+                  row.querySelector(".nb-mv-view").remove();
+                  setStatus("");
+                  return;
+                }
+
+                renderMessageBody(row, m, full);
+
                 const toCopy = code || links[0] || full.text || "";
-                if (toCopy) await navigator.clipboard.writeText(toCopy);
+                if (toCopy) await copyText(toCopy);
 
-                renderMessageBody(row, full, code, links);
+                if (code) setStatus(`✓ تم نسخ كود التحقق: ${code}`);
+                else if (links[0]) setStatus("✓ تم نسخ رابط التحقق");
+                else setStatus("✓ تم نسخ نص الرسالة");
 
-                if (code) statusEl.textContent = `✓ تم نسخ الكود: ${code}`;
-                else if (links[0]) statusEl.textContent = "✓ تم نسخ الرابط، وفتح الأول";
-                else statusEl.textContent = "✓ تم نسخ النص";
-
-                if (links.length && !ev.target.closest(".temp-mail-link")) {
-                  api.tabs.create ? api.tabs.create({ url: links[0], active: false }) : window.open(links[0], "_blank", "noopener");
+                // فتح رابط التحقق مرة واحدة فقط (إن لم يكن هناك كود)
+                if (!code && links.length && !autoOpened) {
+                  autoOpened = true;
+                  openLink(links[0]);
+                  setStatus("✓ تم فتح رابط التحقق في تبويب جديد");
                 }
               } catch (e) {
-                if (statusEl) statusEl.textContent = "خطأ: " + e.message;
+                setStatus("خطأ: " + e.message, false);
               }
             };
 
@@ -457,7 +516,14 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         }
       } catch (e) {
-        if (mailListEl) mailListEl.innerHTML = `<div class="temp-mail-msg">خطأ: ${e.message}</div>`;
+        if (mailListEl) {
+          mailListEl.innerHTML = "";
+          const err = document.createElement("div");
+          err.className = "temp-mail-msg";
+          err.textContent = "خطأ: " + (e.message || "تعذّر تحميل الصندوق");
+          mailListEl.appendChild(err);
+        }
+        setStatus("خطأ: " + (e.message || ""), false);
       } finally {
         btnRefreshInbox.disabled = false;
       }

@@ -119,9 +119,14 @@ function detectFieldType(input) {
   // ---------- PAYMENT (بطاقات الدفع) ----------
   // نفحص حقول الدفع أولاً لأن حقول CVV/CVC تكون غالباً type="password" حتى لا تظهر ككلمة مرور!
   if (type === "credit-card-number" || type === "cc-number" || type === "cc-exp" || type === "cc-csc") return "payment";
-  if (/\b(card|credit|cc|cvv|cvc|cvn|csc|security|exp|expiry|expiration|pan|ccnum|cardnumber|card-number)\b/i.test(allAttrs)) return "payment";
+  // معيار المتصفح القياسي لحقول البطاقات (autocomplete="cc-*")
+  if (/^cc-/i.test(input.autocomplete || "")) return "payment";
+  // إشارات لاتينية — \b آمنة مع ASCII فقط
+  if (/\b(card|credit|cc|ccnum|cardnumber|card-number|cardnum|cvv|cvc|cvv2|cvn|csc|securitycode|security-code|expiry|expiration|expdate|exp-date|pan)\b/i.test(allAttrs)) return "payment";
   if (/\b(visa|mastercard|amex|mada|paypal|stripe|tabby|tamara|apple.?pay|google.?pay|stc.?pay)\b/i.test(allAttrs)) return "payment";
-  if (/\b(card|credit|cc|cvv|cvv2|cvc|شريحة|بطاقة|فيزا|ماستركارد|مدى|مدفوعة|دفع|visa|mastercard|mada|أمان|امان)\b/i.test(lowerLbl)) return "payment";
+  // إشارات عربية — \b لا تعمل مع الحروف العربية، فتُستخدم بدونها
+  if (/(بطاقة|بطاقه|شريحة|فيزا|ماستركارد|مدى|مدفوعة|مدفوعه)/i.test(allAttrs)) return "payment";
+  if (/(بطاقة|بطاقه|شريحة|فيزا|ماستركارد|مدى|كود الأمان|كود الامان|رمز الأمان|رمز الامان|أمان البطاقة|امان البطاقة|تاريخ الانتهاء|تاريخ انتهاء)/i.test(lowerLbl)) return "payment";
 
   // ---------- CONFIRM PASSWORD (تأكيد كلمة المرور) ----------
   // حقول تأكيد كلمة المرور نميزها كي لا ننشئ لها مولّد كلمة مرور مكرر
@@ -233,22 +238,39 @@ function createTempMailBlock(targetInput) {
   fillBtn.onclick = fillField;
 
   function render(list = []) {
-    // list قد يكون مصفوفة (توافق قديم) أو {items, total, full} من المعالج الجديد
+    // list قد يكون مصفوفة (توافق قديم) أو {items, total, complete} من المعالج الجديد
     const items = Array.isArray(list) ? list : (list.items || []);
     const total = (list && list.total) ? list.total : items.length;
 
-    metaCount.textContent = total !== items.length ? `${items.length}+/${total}` : total + " رسالة";
+    metaCount.textContent = total !== items.length ? `${items.length} من ${total}` : total + " رسالة";
     msgBox.innerHTML = items.length ? "" : '<div class="nabih-tm-empty">الصندوق فارغ</div>';
 
     items.forEach(m => {
       const row = document.createElement("div");
       row.className = "nabih-tm-msg" + (m.seen ? "" : " nabih-tm-unread");
       const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : "";
-      row.innerHTML = `<strong>${m.subject || "(بدون موضوع)"}</strong>
-        <p>${m.intro ? m.intro + "…" : ""}</p>
-        <small>${m.from?.address || ""}${time ? " • " + time : ""}${m.hasAttachments ? " 📎" : ""}</small>`;
+
+      // بناء الصف بعناصر DOM نصية: محتوى الرسالة لا يمكنه تخريب الصفحة أو حقن HTML
+      const title = document.createElement("strong");
+      title.dir = "auto";
+      title.textContent = m.subject || "(بدون موضوع)";
+
+      const intro = document.createElement("p");
+      intro.className = "nabih-tm-intro";
+      intro.dir = "auto";
+      intro.textContent = (m.intro || "").trim();
+
+      const meta = document.createElement("small");
+      meta.dir = "auto";
+      meta.textContent = [m.from?.address || "", time, m.hasAttachments ? "📎" : ""]
+        .filter(Boolean).join("  •  ");
+
+      row.appendChild(title);
+      if (intro.textContent) row.appendChild(intro);
+      row.appendChild(meta);
 
       let cache = null;
+      let autoOpened = false;
       const ensureFull = async () => {
         if (cache) return cache;
         const r = await chrome.runtime.sendMessage({ type: "read", id: m.id });
@@ -258,11 +280,19 @@ function createTempMailBlock(targetInput) {
         return cache;
       };
 
-      // نقر على الصف: نسخ كود/رابط + تعبئة الحقل + عرض الروابط أسفل الصف
+      // نقر على الصف: تعبئة الحقل بالكود/الرابط + نسخه + عرض الرسالة كاملة
       row.onclick = async (ev) => {
         ev.stopPropagation();
+        // النقر داخل عارض الرسالة لا يُطويها
+        if (ev.target.closest && ev.target.closest(".nb-mv-view")) return;
         status("جاري القراءة…");
         try {
+          // نقر ثانٍ على الصف يطوي الرسالة
+          if (row.querySelector(".nb-mv-view")) {
+            row.querySelector(".nb-mv-view").remove();
+            status("");
+            return;
+          }
           const full = await ensureFull();
           const links = Array.isArray(full.links) ? full.links : [];
           const code = full.code || null;
@@ -273,15 +303,16 @@ function createTempMailBlock(targetInput) {
           targetInput.dispatchEvent(new Event("input", { bubbles: true }));
           await navigator.clipboard.writeText(fillValue).catch(() => {});
 
-          renderLinksUnder(row, full, links, code, status);
+          renderMessageBody(row, m, full);
 
           if (code) status(`تم نسخ الكود: ${code}`, true);
           else if (links[0]) status("تم نسخ الرابط (والتعبئة بنصه)", true);
           else status("تم النسخ", true);
 
-          // فتح رابط التحقق في تبويب جديد (إن لم يكن النقر على رابط داخلي)
-          if (links.length && !ev.target.closest(".nabih-tm-link") && typeof chrome !== "undefined" && chrome.tabs?.create) {
-            chrome.tabs.create({ url: links[0], active: false });
+          // فتح رابط التحقق مرة واحدة فقط (إن لم يكن هناك كود)
+          if (!code && links.length && !autoOpened) {
+            autoOpened = true;
+            try { window.open(links[0], "_blank", "noopener,noreferrer"); } catch (e) {}
           }
         } catch (err) {
           status("خطأ: " + err.message, false);
@@ -293,42 +324,33 @@ function createTempMailBlock(targetInput) {
     if (total !== items.length) {
       const note = document.createElement("div");
       note.className = "nabih-tm-empty";
-      note.textContent = `يظهر أحدث 30 رسالة (المجموع ${total}).`;
+      note.textContent = `يظهر أحدث ${items.length} رسالة من ${total}.`;
       msgBox.appendChild(note);
     }
   }
 
-  // يعرض الروابط المستخرجة من الأتش تي أم أل والنص كروابط حقيقية قابلة للنقر
-  function renderLinksUnder(row, full, links, code, status) {
-    let box = row.querySelector(".nabih-tm-linkbox");
-    if (box) { box.remove(); return; }   // toggle: نقر ثانٍ يخفيها
-    box = document.createElement("div");
-    box.className = "nabih-tm-linkbox";
+  // يعرض جسم الرسالة كاملاً وآمناً داخل إطار معزول (بدون كود HTML خام ولا اقتطاع)
+  function renderMessageBody(row, m, full) {
+    const existing = row.querySelector(".nb-mv-view");
+    if (existing) { existing.remove(); return null; }
 
-    if (code) {
-      const c = document.createElement("div");
-      c.className = "nabih-tm-code";
-      c.textContent = code;
-      c.title = "انقر لنسخ كود التحقق";
-      c.onclick = async (e) => { e.stopPropagation(); await navigator.clipboard.writeText(code); status(`تم نسخ الكود: ${code}`, true); };
-      box.appendChild(c);
-    }
-    links.forEach(u => {
-      const a = document.createElement("a");
-      a.className = "nabih-tm-link";
-      a.href = u;
-      a.textContent = u.length > 55 ? u.slice(0, 52) + "…" : u;
-      a.title = u;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      a.onclick = (e) => {
-        e.stopPropagation();
-        navigator.clipboard.writeText(u);
-        status("تم نسخ الرابط", true);
-      };
-      box.appendChild(a);
+    const Renderer = window.NabihMail;
+    if (!Renderer) { status("عارض الرسائل غير محمّل", false); return null; }
+
+    const view = Renderer.createView(full, {
+      height: 240,
+      expandedHeight: 420,
+      onStatus: (t) => status(t),
+      onOpen: (u) => { try { window.open(u, "_blank", "noopener,noreferrer"); } catch (e) {} },
+      onDelete: async (msg) => {
+        const r = await chrome.runtime.sendMessage({ type: "remove", id: msg.id });
+        if (!r?.ok) throw new Error(r?.error || "تعذّر الحذف");
+        row.remove();
+        status("تم حذف الرسالة", true);
+      }
     });
-    row.appendChild(box);
+    row.appendChild(view);
+    return view;
   }
 
   createBtn.onclick = async (e) => {
@@ -410,7 +432,24 @@ const CARD_PATTERN = /\b(?:\d[\s\-–]*?){12,19}\b/g;
 const CARD_BIN = /^(?:4|5[1-5]|2[2-7]|3[47]|6[0-9]{2}|9[0-9]{2})/;
 
 // إشارات صفحة الدفع (نصوص معروضة للمستخدم فقط — لا تقرأ الروابط ولا الجافاسكريبت الداخلي)
-const CHECKOUT_SIGNALS = /\b(checkout|دفع|الدفع|فاتورة|invoice|سلة المشتريات|cart|شراء|order|طلب|subscribe|اشتراك|تجديد|renew|payment|pay now|ادفع|تأكيد الطلب|طريقة الدفع|المحفظة|سداد|تمارا|تابي|مدى|فيزا|ماستركارد|apple ?pay|google ?pay|stc ?pay)\b/i;
+// ملاحظة تقنية: \b (حدود الكلمات) في JavaScript تعمل مع ASCII فقط ولا تطابق
+// الحدود حول الحروف العربية — لهذا نفصل الإشارات اللاتينية (مع \b) عن العربية (بدون \b).
+// كان هذا سبب فشل الكشف في معظم صفحات الدفع العربية (تمارا/تابي/مدى...).
+const CHECKOUT_LATIN = /\b(checkout|payment|payments|pay|pay now|invoice|billing|order summary|purchase|subscribe|subscription|renew|donate|cart)\b/i;
+const CHECKOUT_ARABIC = /(دفع|ادفع|ادفع الآن|فاتورة|سلة المشتريات|سلة التسوق|إتمام الشراء|اتمام الشراء|الشراء|اشتراك|اشترك|تجديد|طلبك|تأكيد الطلب|تاكيد الطلب|طريقة الدفع|بيانات الدفع|المحفظة|سداد|تمارا|تابي|مدى|فيزا|ماستركارد)/i;
+const PAY_FIELD_LATIN = /\b(card|credit|cc|ccnum|cardnumber|card-number|cardnum|cvv|cvc|cvv2|cvn|csc|securitycode|security-code|expiry|expiration|expdate|exp-date|pan)\b/i;
+const PAY_FIELD_ARABIC = /(بطاقة|بطاقه|شريحة|فيزا|ماستركارد|مدى|كود الأمان|كود الامان|رمز الأمان|رمز الامان|تاريخ الانتهاء)/i;
+const PAY_URL_PATH = /\/(checkout|payment|payments|pay|billing|order|purchase|cart|subscribe|donate)(\/|\.|$|\?)/i;
+// بوابات الدفع وحقول البطاقات المضمّنة داخل iframe (Stripe/Moyasar/Tabby/...)
+const PAY_IFRAME = /(stripe|paymob|moyasar|hyperpay|tap\.company|tabby|tamara|apple\.?pay|google\.?pay|secure-?checkout|checkout\.|payment|ipay|oppwa)/i;
+
+// هل يبدو هذا الحقل حقل بطاقة/دفع؟ (يُستخدم في فحص الصفحة العام)
+function isPaymentField(input) {
+  const blob = (input.name + " " + input.id + " " + input.placeholder + " " +
+    (input.autocomplete || "") + " " +
+    Array.from(input.labels || []).map(l => l.textContent).join(" ")).toLowerCase();
+  return PAY_FIELD_LATIN.test(blob) || PAY_FIELD_ARABIC.test(blob);
+}
 
 // كم مرة وكم ننتظر؟ حقول الدفع تُولّد متأخرة (SPA / Stripe Elements / Tabby / Tamara widgets)
 const MAX_PAYMENT_RETRIES = 6;
@@ -418,19 +457,43 @@ const PAYMENT_SCAN_INTERVAL_MS = 800;
 
 // فحص الصفحة بأكملها — يُعاد تلقائياً حتى تظهر حقول الدفع أو نصل الحد الأقصى.
 // يقرأ النص الظاهر وخصائص الحقول فقط (يحترم الخصوصية — لا يرسل شيئاً خارج الصفحة).
+//
+// منطق التقييم بالنقاط (كانت المشكلة: اعتماد كامل على كلمات لا تُطابقها \b العربية
+// + اشتراط إشارتين معاً — ففات 90% من صفحات الدفع):
+//   حقل بطاقة واضح ............. 2 نقطة (أقوى إشارة)
+//   إطار دفع مضمّن (iframe) ..... 2 نقاط (Stripe/Moyasar/Tabby... محتواها محمي)
+//   نصوص "دفع/شراء" ............. 1 نقطة
+//   مسار الرابط (/checkout...) . 1 نقطة
+//   زر دفع (ادفع الآن...) ...... 1 نقطة
+//   رقم يشبه البطاقة ............ 1 نقطة
+// تُعتبر الصفحة صفحة دفع عند مجموع نقطتين مع وجود إشارة بنيوية واحدة على الأقل
+// (حقل بطاقة، إطار دفع، مسار رابط، أو رقم بطاقة) حتى لا تكفي المصادفات النصية.
 function scanPageForPayments(attempt = 1) {
-  // (1) حقول الدفع: name / id / placeholder / label (تشمل cvv و expiry و security code)
-  const cardInputs = [...document.querySelectorAll("input")].filter(i => {
-    const blob = (i.name + " " + i.id + " " + i.placeholder + " " +
-      Array.from(i.labels || []).map(l => l.textContent).join(" ")).toLowerCase();
-    return /\b(card|credit|cc|ccnum|cardnumber|card-number|number|cvv|cvc|cvv2|cvn|csc|security|expir|exp|expiration|pan|شريحة|بطاقة|فيزا|ماستركارد|مدى|مدفوعة|دفع)\b/.test(blob);
-  });
+  // (1) حقول الدفع: name / id / placeholder / autocomplete / label
+  const cardInputs = [...document.querySelectorAll("input, select")].filter(isPaymentField);
 
-  // (2) نصوص صفحة الدفع الظاهرة للمستخدم
+  // (2) إطارات الدفع المضمّنة — حقول Stripe وغيرها داخل iframe لا يمكن قراءة
+  //     محتواها من content script، لكن وجود الإطار نفسه إشارة قوية على وجود دفع
+  const payIframes = [...document.querySelectorAll("iframe")].filter(f => {
+    const blob = `${f.src || ""} ${f.title || ""} ${f.name || ""} ${f.getAttribute("aria-label") || ""}`;
+    return PAY_IFRAME.test(blob);
+  }).length;
+
+  // (3) نصوص صفحة الدفع الظاهرة للمستخدم
   const text = (document.body && document.body.innerText) || "";
-  const hasCheckout = CHECKOUT_SIGNALS.test(text);
+  const hasCheckout = CHECKOUT_LATIN.test(text) || CHECKOUT_ARABIC.test(text);
 
-  // (3) أرقام تشبه البطاقة في النص (تُستثنى الحقول والمحتوى الداخلي <script>/<style>)
+  // (4) مسار الرابط الحالي
+  const urlHit = PAY_URL_PATH.test(location.pathname || "");
+
+  // (5) أزرار الدفع — كثير من بوابات الدفع زرّ فقط بدون حقول ظاهرة
+  const payButtons = [...document.querySelectorAll('button, input[type="submit"], input[type="button"], [role="button"]')]
+    .filter(b => {
+      const t = (b.textContent || b.value || b.getAttribute("aria-label") || "").trim();
+      return t && (CHECKOUT_LATIN.test(t) || CHECKOUT_ARABIC.test(t));
+    }).length;
+
+  // (6) أرقام تشبه البطاقة في النص (تُستثنى الحقول والمحتوى الداخلي <script>/<style>)
   let cardLikeCount = 0;
   try {
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
@@ -452,13 +515,17 @@ function scanPageForPayments(attempt = 1) {
     }
   } catch (e) { /* لا نكسر التنبيه */ }
 
-  // تقييم: حقل دفع + أي إشارة دفع تكفي (معظم صفحات الدفع بها حقل واحد فقط: رقم البطاقة).
-  // هذا يصلح المشكلة السابقة (اشتراط حقلين) التي أخفت 90% من صفحات الدفع الحقيقية.
   let score = 0;
-  if (hasCheckout) score++;
-  if (cardInputs.length >= 1) score++;
-  if (cardLikeCount > 0) score++;
-  const isPayment = score >= 2 || (cardInputs.length >= 1 && hasCheckout);
+  if (cardInputs.length >= 1) score += 2;
+  if (payIframes >= 1) score += 2;
+  if (hasCheckout) score += 1;
+  if (urlHit) score += 1;
+  if (payButtons >= 1) score += 1;
+  if (cardLikeCount > 0) score += 1;
+
+  const hasStructuralSignal =
+    cardInputs.length >= 1 || payIframes >= 1 || urlHit || cardLikeCount > 0;
+  const isPayment = score >= 2 && hasStructuralSignal;
 
   // إعادة المحاولة: حقول الدفع تُولّد متأخرة. ننتظر body حقيقياً (نص > 60 محرفاً).
   const bodyReady = document.body && document.body.innerText && document.body.innerText.length > 60;
@@ -472,6 +539,28 @@ function scanPageForPayments(attempt = 1) {
 
   return isPayment;
 }
+
+// فحص مجدول للدفع — يُستدعى بهدوء من scanPage عند أي تغيّر في الصفحة
+// (هذا ما يجعل الكشف يعمل مع تطبيقات الصفحة الواحدة SPA التي تولّد حقول
+// الدفع بعد التنقّل دون إعادة تحميل) وعند تنقّل history/hash.
+let paymentScanScheduled = false;
+let lastPaymentUrl = location.href;
+function schedulePaymentScan() {
+  if (paymentScanScheduled) return;
+  paymentScanScheduled = true;
+  setTimeout(() => {
+    paymentScanScheduled = false;
+    if (document.visibilityState !== "visible") return;
+    // السماح بإظهار تنبيه جديد بعد تنقّل داخل SPA دون إعادة تحميل
+    if (location.href !== lastPaymentUrl) {
+      window.__nabihPaymentToast = false;
+      lastPaymentUrl = location.href;
+    }
+    scanPageForPayments();
+  }, 700);
+}
+window.addEventListener("popstate", schedulePaymentScan);
+window.addEventListener("hashchange", schedulePaymentScan);
 
 // تطبيق تنبيه الصفحة وإعادة المحاولة الذكية (تُستدعى بعد تحميل الإعدادات فقط)
 function ensurePaymentPageWarning() {
@@ -685,7 +774,7 @@ function showTooltip(badge, item) {
 
   const bRect = badge.getBoundingClientRect();
   tip.style.top = `${bRect.bottom + 6}px`;
-  tip.style.left = `${Math.max(10, Math.min(bRect.left, window.innerWidth - 290))}px`;
+  tip.style.left = `${Math.max(10, Math.min(bRect.left, window.innerWidth - 375))}px`;
   tip.classList.add("visible");
 
   // مولّد كلمة المرور يظهر مع حقول كلمة المرور
@@ -962,10 +1051,6 @@ function scanPage() {
 
     // تنبيه صفحات الدفع عند رصد حقل بيانات دفع (فقط بعد تحميل الإعدادات)
     if (type === "payment") {
-      if (settingsLoaded) {
-        const itemRef = { input, type, badge };
-        showPaymentWarning(itemRef);
-      }
       watchPaymentInput(input);
     }
 
@@ -979,6 +1064,12 @@ function scanPage() {
 
     const item = { input, type, badge };
     detectedFields.push(item);
+
+    // تنبيه فوري لصفحات الدفع — يُستدعى هنا بعد إنشاء العناصر.
+    // (سابقاً كان يُستدعى قبل "const badge" فيرمي ReferenceError ويوقف الفحص كله)
+    if (type === "payment" && settingsLoaded) {
+      showPaymentWarning(item);
+    }
 
     badge.onclick = (e) => {
       e.stopPropagation();
@@ -1013,6 +1104,9 @@ function scanPage() {
       chrome.runtime.sendMessage({ type: "UPDATE_PAYMENT_COUNT", paymentCount }).catch(() => {});
     }
   }
+
+  // إعادة تقييم صفحة الدفع عند أي تغيّر في DOM (لالتقاط الحقول المتأخرة/SPA)
+  schedulePaymentScan();
 }
 
 // إغلاق التلميح عند النقر في الخارج

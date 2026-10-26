@@ -2,14 +2,13 @@
   "manifest_version": 3,
   "name": "نبيه | Nabih",
   "version": "1.0.1",
-  "description": "إضافة للمتصفح تقوم برفع وعي المستخدم حول أهمية بيانته الشخصية عن طريق عرض بعض التنبيهات الإرشادية أثناء قيامه بالتسجيل في المنصات و المواقع الرقمية",
+  "description": "إضافة للمتصفح تقوم برفع وعي المستخدم حول أهمية بياناته الشخصية عن طريق عرض بعض التنبيهات الإرشادية أثناء قيامه بالتسجيل في المنصات و المواقع الرقمية",
   "icons": {
     "16": "Lock.png",
     "32": "Lock.png",
     "48": "Lock.png",
     "128": "Lock.png"
   },
-  "host_permissions": ["https://api.mail.tm/*"],
   "background": { "service_worker": "tempMail.js" },
   "action": {
     "default_icon": {
@@ -21,17 +20,18 @@
     "default_popup": "popup.html",
     "default_title": "نبيه | حارس الوعي والبيانات"
   },
-  "permissions":
-   ["tabs", "storage"],
-   
-  "host_permissions":
-   ["https://www.virustotal.com/*"],
+  "permissions": ["tabs", "storage"],
+
+  "host_permissions": [
+    "https://api.mail.tm/*",
+    "https://www.virustotal.com/*"
+  ],
 
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["style.css"]
+      "js": ["mailRender.js", "content.js"],
+      "css": ["style.css", "mail-view.css"]
     }
   ],
   "web_accessible_resources": [
