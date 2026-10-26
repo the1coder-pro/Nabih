@@ -1,6 +1,3 @@
-// ============================================================
-// نبيه | Nabih - أداة الوعي الأمني وحماية البيانات
-// ============================================================
 
 const CONFIGS = {
   email: {
@@ -950,7 +947,7 @@ function init() {
   }
 }
 
-// تم تحميل الإعدادات؟ ننتظر قبل أول فحص لضمان احترام مفاتيح المستخدم (تنبيه الدفع / تجاهل الموقع)
+
 let settingsLoaded = false;
 
 if (typeof chrome !== "undefined" && chrome.storage?.sync) {
@@ -991,5 +988,3 @@ if (typeof chrome !== "undefined" && chrome.storage?.sync) {
   init();
   ensurePaymentPageWarning();
 }
-
-
