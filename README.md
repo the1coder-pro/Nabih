@@ -20,8 +20,7 @@
 - https://github.com/Rabbit-Company/PasswordGenerator-JS 
 ###   احضار ايميلات مؤقتة done
 - https://docs.mail.tm/
-###   فحص التنزيلات
-- https://docs.virustotal.com/docs/api-overview
+
 
 ---
 
