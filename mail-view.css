@@ -1,0 +1,158 @@
+/* ============================================================
+   نبيه | تنسيقات عارض الرسائل (mail-view.css)
+   مُشتركة بين نافذة الإضافة (popup) والشريط/التلميح داخل الصفحة.
+   — تُحمّل من popup.html ومن content_scripts في manifest.json
+   ============================================================ */
+
+.nb-mv-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: #0b1220;
+  cursor: default;
+  text-align: right;
+  font-family: "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* الترويسة */
+.nb-mv-head { display: flex; flex-direction: column; gap: 3px; }
+.nb-mv-subject {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.nb-mv-meta {
+  font-size: 10.5px;
+  color: #94a3b8;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+/* كود التحقق */
+.nb-mv-otp-wrap { display: flex; flex-direction: column; gap: 4px; }
+.nb-mv-label { font-size: 10.5px; color: #94a3b8; }
+.nb-mv-otp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-align: center;
+  color: #fbbf24;
+  background: #0f172a;
+  border: 1px dashed #f59e0b;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  user-select: all;
+  direction: ltr;
+}
+.nb-mv-otp:hover { background: rgba(245, 158, 11, 0.12); }
+
+/* شريط الأدوات */
+.nb-mv-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+.nb-mv-seg { display: inline-flex; gap: 3px; }
+.nb-mv-btn {
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.nb-mv-btn:hover { background: #1e293b; border-color: #38bdf8; color: #38bdf8; }
+.nb-mv-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.nb-mv-btn.active {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+/* جسم الرسالة */
+.nb-mv-body { display: block; }
+.nb-mv-frame {
+  display: block;
+  width: 100%;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: height 0.18s ease;
+}
+.nb-mv-inline {
+  overflow: auto;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  word-break: break-word;
+}
+.nb-mv-inline img { max-width: 100%; height: auto; }
+.nb-mv-inline table { max-width: 100%; }
+.nb-mv-inline a { color: #0369a1; }
+.nb-mv-imgph {
+  display: inline-block;
+  background: #f1f5f9;
+  border: 1px dashed #94a3b8;
+  border-radius: 6px;
+  padding: 2px 7px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+/* الروابط */
+.nb-mv-links { display: flex; flex-direction: column; gap: 5px; }
+.nb-mv-linkrow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.nb-mv-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10.5px;
+  color: #38bdf8;
+  text-decoration: none;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 5px 7px;
+  word-break: break-all;
+}
+.nb-mv-link:hover { border-color: #38bdf8; background: rgba(56, 189, 248, 0.1); }
+
+/* المرفقات */
+.nb-mv-attach { display: flex; flex-direction: column; gap: 5px; }
+.nb-mv-attrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+.nb-mv-attname { flex: 1 1 auto; min-width: 0; font-size: 11px; color: #e2e8f0; word-break: break-all; }
+.nb-mv-attsize { font-size: 10px; color: #94a3b8; }
+
+.nb-mv-empty { font-size: 11px; color: #94a3b8; text-align: center; padding: 6px; }
