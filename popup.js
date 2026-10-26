@@ -40,6 +40,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (mailCountEl) mailCountEl.textContent = "0";
   }
 
+  document.getElementById("btnScanSite").addEventListener(("click"), () => {
+
+    url = window.URL
+    url2 = window.location.href
+
+    console.log(url)
+    console.log(url2)
+
+} )
+
   // إرسال أمر للخلفية (tempMail.js) مع معالجة الأخطاء
   async function callApi(type, payload = {}) {
     const res = await api.runtime.sendMessage({ type, ...payload });
