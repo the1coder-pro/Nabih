@@ -1,6 +1,3 @@
-// ============================================================
-// نبيه | Nabih - أداة الوعي الأمني وحماية البيانات
-// ============================================================
 
 const CONFIGS = {
   email: {
@@ -27,6 +24,12 @@ const CONFIGS = {
     name: "اسم المستخدم",
     title: "إرشادات اسم المستخدم",
     tip: "اختر اسماً لا يكشف هويتك الحقيقية أو بياناتك الشخصية."
+  },
+  payment: {
+    icon: "💳",
+    name: "بيانات الدفع",
+    title: "تنبيه الأمان عند الدفع",
+    tip: "لا تستخدم بطاقتك البنكية الرئيسية. استخدم بطاقة مدفوعة مسبقاً أو بطاقة إضافية بمبلغ محدود لتجنب الخصومات غير المقصودة (تجارب مجانية، اشتراكات متكررة، مواقع مشبوهة)."
   }
 };
 
@@ -61,6 +64,12 @@ function detectFieldType(input) {
   if (type === "password") return "password";
   if (type === "email") return "email";
   if (type === "tel") return "phone";
+  if (type === "credit-card-number" || type === "cc-number" || type === "cc-exp" || type === "cc-csc") return "payment";
+
+  // ---------- PAYMENT (بطاقات الدفع) ----------
+  const allAttrs = `${input.name || ""} ${input.id || ""} ${input.placeholder || ""} ${input.autocomplete || ""}`.toLowerCase();
+  if (/\b(card|credit|cc|cvv|cvc|cvn|csc|security|exp|expiry|expiration|pan|ccnum|cardnumber|card-number)\b/i.test(allAttrs)) return "payment";
+  if (/\b(visa|mastercard|amex|mada|paypal|stripe|tabby|tamara|apple.?pay|google.?pay|stc.?pay)\b/i.test(allAttrs)) return "payment";
   
 
   const attrs = `${input.name || ""} ${input.id || ""} ${input.placeholder || ""} ${input.autocomplete || ""}`.toLowerCase();
@@ -83,6 +92,8 @@ function detectFieldType(input) {
     if (/\b(email|بريد|ايميل)\b/i.test(labelText)) return "email";
     if (/\b(phone|هاتف|جوال)\b/i.test(labelText)) return "phone";
     if (/\b(username|اسم المستخدم)\b/i.test(labelText)) return "username";
+    // بطاقة الدفع: نربطها بكلمات مفتاحية خاصة بالبطاقات لتجنب الخلط مع "رقم الهاتف"
+    if (/\b(card|credit|cc|cvv|cvv2|cvc|شريحة|بطاقة|فيزا|ماستركارد|مدى|مدفوعة|دفع|visa|mastercard|mada)\b/i.test(labelText)) return "payment";
   }
   return null;
 }
@@ -147,30 +158,102 @@ function createTempMailBlock(targetInput) {
   }
 
   function render(list = []) {
-    metaCount.textContent = list.length + " رسالة" + (list.length === 0 || list.length === 1 ? "" : "ات");
-    msgBox.innerHTML = list.length ? "" : '<div class="nabih-tm-empty">الصندوق فارغ</div>';
-    list.forEach(m => {
+    // list قد يكون مصفوفة (توافق قديم) أو {items, total, full} من المعالج الجديد
+    const items = Array.isArray(list) ? list : (list.items || []);
+    const total = (list && list.total) ? list.total : items.length;
+
+    metaCount.textContent = total !== items.length ? `${items.length}+/${total}` : total + " رسالة";
+    msgBox.innerHTML = items.length ? "" : '<div class="nabih-tm-empty">الصندوق فارغ</div>';
+
+    items.forEach(m => {
       const row = document.createElement("div");
       row.className = "nabih-tm-msg" + (m.seen ? "" : " nabih-tm-unread");
+      const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : "";
       row.innerHTML = `<strong>${m.subject || "(بدون موضوع)"}</strong>
-        <small>${m.from?.address || ""}</small>`;
-      row.onclick = async () => {
-        status("جاري القراءة…");
+        <p>${m.intro ? m.intro + "…" : ""}</p>
+        <small>${m.from?.address || ""}${time ? " • " + time : ""}${m.hasAttachments ? " 📎" : ""}</small>`;
+
+      let cache = null;
+      const ensureFull = async () => {
+        if (cache) return cache;
         const r = await chrome.runtime.sendMessage({ type: "read", id: m.id });
-        if (r?.ok) {
-          targetInput.value = m.subject.includes("كود") || m.subject.includes("رمز") || m.subject.includes("code")
-              ? (r.data.text || "").match(new RegExp(String.raw`\b\d{4,8}\b`))?.[0] || r.data.text || ""
-              : r.data.text || "";
+        if (!r?.ok) throw new Error(r?.error || "لا استجابة");
+        cache = r.data;
+        if (!m.seen) { m.seen = true; row.classList.remove("nabih-tm-unread"); }
+        return cache;
+      };
+
+      // نقر على الصف: نسخ كود/رابط + تعبئة الحقل + عرض الروابط أسفل الصف
+      row.onclick = async (ev) => {
+        ev.stopPropagation();
+        status("جاري القراءة…");
+        try {
+          const full = await ensureFull();
+          const links = Array.isArray(full.links) ? full.links : [];
+          const code = full.code || null;
+
+          // أولوية التعبئة: كود التحقق، وإلا أول رابط، وإلا النص
+          const fillValue = code || links[0] || full.text || "";
+          targetInput.value = fillValue;
           targetInput.dispatchEvent(new Event("input", { bubbles: true }));
-          navigator.clipboard.writeText(r.data.text || "").catch(() => {});
-          row.classList.remove("nabih-tm-unread");
-          status("تم النسخ");
-        } else {
-          status("خطأ: " + (r?.error || "لا استجابة"), false);
+          await navigator.clipboard.writeText(fillValue).catch(() => {});
+
+          renderLinksUnder(row, full, links, code, status);
+
+          if (code) status(`تم نسخ الكود: ${code}`, true);
+          else if (links[0]) status("تم نسخ الرابط (والتعبئة بنصه)", true);
+          else status("تم النسخ", true);
+
+          // فتح رابط التحقق في تبويب جديد (إن لم يكن النقر على رابط داخلي)
+          if (links.length && !ev.target.closest(".nabih-tm-link") && typeof chrome !== "undefined" && chrome.tabs?.create) {
+            chrome.tabs.create({ url: links[0], active: false });
+          }
+        } catch (err) {
+          status("خطأ: " + err.message, false);
         }
       };
       msgBox.appendChild(row);
     });
+
+    if (total !== items.length) {
+      const note = document.createElement("div");
+      note.className = "nabih-tm-empty";
+      note.textContent = `يظهر أحدث 30 رسالة (المجموع ${total}).`;
+      msgBox.appendChild(note);
+    }
+  }
+
+  // يعرض الروابط المستخرجة من الأتش تي أم أل والنص كروابط حقيقية قابلة للنقر
+  function renderLinksUnder(row, full, links, code, status) {
+    let box = row.querySelector(".nabih-tm-linkbox");
+    if (box) { box.remove(); return; }   // toggle: نقر ثانٍ يخفيها
+    box = document.createElement("div");
+    box.className = "nabih-tm-linkbox";
+
+    if (code) {
+      const c = document.createElement("div");
+      c.className = "nabih-tm-code";
+      c.textContent = code;
+      c.title = "انقر لنسخ كود التحقق";
+      c.onclick = async (e) => { e.stopPropagation(); await navigator.clipboard.writeText(code); status(`تم نسخ الكود: ${code}`, true); };
+      box.appendChild(c);
+    }
+    links.forEach(u => {
+      const a = document.createElement("a");
+      a.className = "nabih-tm-link";
+      a.href = u;
+      a.textContent = u.length > 55 ? u.slice(0, 52) + "…" : u;
+      a.title = u;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.onclick = (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(u);
+        status("تم نسخ الرابط", true);
+      };
+      box.appendChild(a);
+    });
+    row.appendChild(box);
   }
 
   createBtn.onclick = async (e) => {
@@ -232,6 +315,142 @@ function createTempMailBlock(targetInput) {
   });
 
   return box;
+}
+
+// ============================================================
+// نبيه | تنبيه صفحات الدفع (Payment Warning)
+// ============================================================
+
+// إعدادات التنبيه — تُحمّل من التخزين، true بشكل افتراضي
+let PAYMENT_WARN = true;
+let PAYMENT_TOAST = true;
+
+const CARD_PATTERN = /\b(?:\d[\s\-–]*?){12,19}\b/g;
+
+// بادئات بطاقات حقيقية — تشمل بطاقات مدى السعودية وبطاقات مدفوعة مسبقاً
+// فيزا=4 | ماستركارد=5[1-5] | ماستركارد حديث=2[2-7] | أمريكان إكسبريس=3[47] | ديسكفر=6xxx
+const CARD_BIN = /^(?:4|5[1-5]|2[2-7]|3[47]|6[0-9]{2}|9[0-9]{2})/;
+
+// إشارات صفحة الدفع (نصوص معروضة للمستخدم فقط — لا تقرأ الروابط ولا الجافاسكريبت الداخلي)
+const CHECKOUT_SIGNALS = /\b(checkout|دفع|الدفع|فاتورة|invoice|سلة المشتريات|cart|شراء|order|طلب|subscribe|اشتراك|تجديد|renew|payment|pay now|ادفع|تأكيد الطلب|طريقة الدفع|المحفظة|سداد|تمارا|تابي|مدى|فيزا|ماستركارد|apple ?pay|google ?pay|stc ?pay)\b/i;
+
+// كم مرة وكم ننتظر؟ حقول الدفع تُولّد متأخرة (SPA / Stripe Elements / Tabby / Tamara widgets)
+const MAX_PAYMENT_RETRIES = 6;
+const PAYMENT_SCAN_INTERVAL_MS = 800;
+
+// فحص الصفحة بأكملها — يُعاد تلقائياً حتى تظهر حقول الدفع أو نصل الحد الأقصى.
+// يقرأ النص الظاهر وخصائص الحقول فقط (يحترم الخصوصية — لا يرسل شيئاً خارج الصفحة).
+function scanPageForPayments(attempt = 1) {
+  // (1) حقول الدفع: name / id / placeholder / label (تشمل cvv و expiry و security code)
+  const cardInputs = [...document.querySelectorAll("input")].filter(i => {
+    const blob = (i.name + " " + i.id + " " + i.placeholder + " " +
+      Array.from(i.labels || []).map(l => l.textContent).join(" ")).toLowerCase();
+    return /\b(card|credit|cc|ccnum|cardnumber|card-number|number|cvv|cvc|cvv2|cvn|csc|security|expir|exp|expiration|pan|شريحة|بطاقة|فيزا|ماستركارد|مدى|مدفوعة|دفع)\b/.test(blob);
+  });
+
+  // (2) نصوص صفحة الدفع الظاهرة للمستخدم
+  const text = (document.body && document.body.innerText) || "";
+  const hasCheckout = CHECKOUT_SIGNALS.test(text);
+
+  // (3) أرقام تشبه البطاقة في النص (تُستثنى الحقول والمحتوى الداخلي <script>/<style>)
+  let cardLikeCount = 0;
+  try {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+      acceptNode: n => {
+        const p = n.parentElement;
+        if (!p) return NodeFilter.FILTER_REJECT;
+        if (/^(SCRIPT|STYLE)$/.test(p.nodeName)) return NodeFilter.FILTER_REJECT;
+        if (p.closest("input,textarea,select,[contenteditable]")) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    let node;
+    while ((node = walker.nextNode())) {
+      let m; CARD_PATTERN.lastIndex = 0;
+      while ((m = CARD_PATTERN.exec(node.textContent))) {
+        const num = m[0].replace(/\D/g, "");
+        if (num.length >= 15 && CARD_BIN.test(num)) cardLikeCount++;
+      }
+    }
+  } catch (e) { /* لا نكسر التنبيه */ }
+
+  // تقييم: حقل دفع + أي إشارة دفع تكفي (معظم صفحات الدفع بها حقل واحد فقط: رقم البطاقة).
+  // هذا يصلح المشكلة السابقة (اشتراط حقلين) التي أخفت 90% من صفحات الدفع الحقيقية.
+  let score = 0;
+  if (hasCheckout) score++;
+  if (cardInputs.length >= 1) score++;
+  if (cardLikeCount > 0) score++;
+  const isPayment = score >= 2 || (cardInputs.length >= 1 && hasCheckout);
+
+  // إعادة المحاولة: حقول الدفع تُولّد متأخرة. ننتظر body حقيقياً (نص > 60 محرفاً).
+  const bodyReady = document.body && document.body.innerText && document.body.innerText.length > 60;
+  if (!isPayment && attempt < MAX_PAYMENT_RETRIES && (!bodyReady || attempt < 3)) {
+    clearTimeout(window.__nabihPayScanTimer);
+    window.__nabihPayScanTimer = setTimeout(() => {
+      if (document.visibilityState === "visible") scanPageForPayments(attempt + 1);
+    }, PAYMENT_SCAN_INTERVAL_MS);
+    return false;
+  }
+
+  return isPayment;
+}
+
+// تطبيق تنبيه الصفحة وإعادة المحاولة الذكية (تُستدعى بعد تحميل الإعدادات فقط)
+function ensurePaymentPageWarning() {
+  if (!PAYMENT_TOAST) return;
+  if (scanPageForPayments()) showPaymentToast();
+}
+// إشعار منبثق في الزاوية (مستقل عن أي حقل) — لصفحات الدفع العامة
+function showPaymentToast() {
+  if (!PAYMENT_TOAST || window.__nabihPaymentToast) return;
+  window.__nabihPaymentToast = true;
+
+  const toast = document.createElement("div");
+  toast.className = "nabih-toast nabih-toast-payment";
+  toast.dir = "rtl";
+  toast.setAttribute("role", "alert");
+  toast.innerHTML = `
+    <div class="nabih-toast-icon" aria-hidden="true">💳</div>
+    <div class="nabih-toast-body">
+      <strong>صفحة دفع مكتشفة</strong>
+      <p>استخدم بطاقة إضافية أو مدفوعة مسبقاً بمبلغ محدود، ولا تربط بطاقتك البنكية الرئيسية أو بطاقة "مدى" الأساسية.</p>
+    </div>
+    <button type="button" class="nabih-toast-close" title="إغلاق">✕</button>
+  `;
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add("show"));
+
+  const closeToast = () => toast.remove();
+  toast.querySelector(".nabih-toast-close").onclick = closeToast;
+  setTimeout(closeToast, 12000);
+}
+
+// تنبيه شامل للدفع: تلميح عند الحقل + إشعار بالصفحة + بطاقة في الشريط الجانبي
+function showPaymentWarning(item) {
+  if (!PAYMENT_WARN) return;
+
+  // إشعار منبثق في الزاوية (مرتبط بالصفحة وليس بالحقل)
+  showPaymentToast();
+
+  // بطاقة في الشريط الجانبي (إن كان مفعّلاً)
+  if (settings.displayMode === "sidebar" && typeof updateSidebarContent === "function") {
+    updateSidebarContent();
+  }
+}
+
+// رصد الأرقام التي تبدو كرقم بطاقة أثناء الكتابة الحية (تُفعّل بعد تحميل الإعدادات)
+function watchPaymentInput(input) {
+  let notified = false;
+  const handler = () => {
+    if (notified || !settingsLoaded || !PAYMENT_WARN) return;
+    const val = input.value.replace(/[\s\-–]/g, "");
+    if (val.length >= 12 && CARD_BIN.test(val)) {
+      notified = true;
+      const item = detectedFields.find(i => i.input === input);
+      if (item) showPaymentWarning(item);
+    }
+  };
+  input.addEventListener("input", handler, { passive: true });
 }
 
 // عنصر مولد كلمة المرور مع خيارات الطول والأحرف والأرقام والرموز
@@ -448,7 +667,7 @@ function updateSidebarContent() {
   if (!sidebarEl) return;
 
   sidebarEl.innerHTML = `
-    <div class="nabih-sidebar-head">
+    <div class="nabih-sidebar-head ibm-plex-sans-arabic-regular">
       <strong>🔒 نبيه | لوحة التنبيهات</strong>
       <button type="button" class="nabih-sidebar-close">✕</button>
     </div>
@@ -476,6 +695,41 @@ function updateSidebarContent() {
 
     if (item.type === "email") {
       card.appendChild(createTempMailBlock(item.input));
+    }
+
+    if (item.type === "payment") {
+      const warn = document.createElement("div");
+      warn.className = "nabih-payment-warn";
+      warn.innerHTML = `
+        <strong>💳 نصائح الدفع الآمن</strong>
+        <ul>
+          <li>✅ استخدم بطاقة مدفوعة مسبقاً أو بطاقة افتراضية بمبلغ محدود.</li>
+          <li>✅ فعّل تنبيهات البنك اللحظية وتحقق من المبلغ قبل إدخال رمز OTP.</li>
+          <li>❌ لا تحفظ البطاقة في الموقع ولا تفعل الدفع بنقرة واحدة.</li>
+          <li>❌ احذر التجارب المجانية التي تتحول لاشتراكات متكررة.</li>
+        </ul>
+        <label class="nabih-dont-show">
+          <input type="checkbox" class="nabih-payment-ignore" type="checkbox"> لا تنبّهني في هذا الموقع
+        </label>`;
+      card.appendChild(warn);
+
+      // حفظ تجاهل الموقع
+      warn.querySelector(".nabih-payment-ignore").onchange = (e) => {
+        if (!e.target.checked) return;
+        const host = window.location.hostname;
+        chrome.storage.sync.get(["nabihSettings"], ({ nabihSettings: s = {} }) => {
+          const ignored = new Set(s.ignoredPaymentSites || []);
+          ignored.add(host);
+          chrome.storage.sync.set({ nabihSettings: { ...s, ignoredPaymentSites: [...ignored] } });
+          PAYMENT_WARN = false;
+          PAYMENT_TOAST = false;
+          // إخفاء الإشعار المنبثق إن كان ظاهراً
+          document.querySelectorAll(".nabih-toast-payment").forEach(el => el.remove());
+        });
+      };
+
+      // نحدّث التنبيه بالصفحة عند فتح الشريط الجانبي
+      showPaymentWarning(item);
     }
 
     if (cfg.isPassword) {
@@ -544,6 +798,16 @@ function scanPage() {
     hasNew = true;
     const cfg = CONFIGS[type];
 
+    // تنبيه صفحات الدفع عند رصد حقل بيانات دفع (فقط بعد تحميل الإعدادات)
+    if (type === "payment") {
+      if (settingsLoaded) {
+        const itemRef = { input, type, badge };
+        showPaymentWarning(itemRef);
+      }
+      watchPaymentInput(input);
+    }
+
+
     const badge = document.createElement("button");
     badge.type = "button";
     badge.className = `nabih-badge nabih-badge-${type}`;
@@ -574,6 +838,14 @@ function scanPage() {
 
   if (hasNew && settings.displayMode === "sidebar") {
     updateSidebarContent();
+  }
+
+  // تحديث حيّ لعداد "حقول الدفع" في النافذة المنبثقة (تتغير مع الحقول المتأخرة)
+  if (hasNew) {
+    const paymentCount = detectedFields.filter(i => i.type === "payment").length;
+    if (paymentCount > 0 && typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: "UPDATE_PAYMENT_COUNT", paymentCount }).catch(() => {});
+    }
   }
 }
 
@@ -617,13 +889,33 @@ if (typeof chrome !== "undefined" && chrome.runtime?.onMessage) {
     if (msg.type === "UPDATE_SETTINGS") {
       settings = { ...settings, ...msg.settings };
       applyDisplayMode();
+      // تطبيق مباشر لتنبيهات الدفع (كي يُطبّق التبديل فوراً في التبويب المفتوح)
+      if (typeof msg.settings.paymentWarn === "boolean") {
+        PAYMENT_WARN = msg.settings.paymentWarn;
+      }
+      if (typeof msg.settings.paymentToast === "boolean") {
+        PAYMENT_TOAST = msg.settings.paymentToast;
+      }
+      const ignored = (msg.settings.ignoredPaymentSites) || [];
+      if (ignored.includes(window.location.hostname)) {
+        PAYMENT_WARN = false;
+        PAYMENT_TOAST = false;
+      }
+      // إعادة تقييم الصفحة (مثلاً: المستخدم فعّل التنبيه من النافذة)
+      ensurePaymentPageWarning();
+      sendResponse({ success: true });
+
+    } else if (msg.type === "UPDATE_PAYMENT_COUNT") {
+      // لا حاجة لعمل إضافي — العداد يُحدّث محلياً عند التحليل
       sendResponse({ success: true });
 
     } else if (msg.type === "GET_PAGE_STATS") {
+      const paymentCount = detectedFields.filter(i => i.type === "payment").length;
       sendResponse({
         domain: window.location.hostname,
         formsCount: detectedFormsCount,
-        fieldsCount: detectedFields.length
+        fieldsCount: detectedFields.length,
+        paymentCount
       });
 
     } else if (msg.type === "fillEmail") {
@@ -655,19 +947,44 @@ function init() {
   }
 }
 
+
+let settingsLoaded = false;
+
 if (typeof chrome !== "undefined" && chrome.storage?.sync) {
   chrome.storage.sync.get(["nabihSettings"], (res) => {
-    if (res?.nabihSettings) settings = { ...settings, ...res.nabihSettings };
+    if (res?.nabihSettings) {
+      settings = { ...settings, ...res.nabihSettings };
+      // تطبيق إعدادات تنبيه الدفع
+      PAYMENT_WARN = settings.paymentWarn !== false;
+      PAYMENT_TOAST = settings.paymentToast !== false;
+      // تجاهل الموقع إذا اختار المستخدم "لا تنبّهني في هذا الموقع"
+      const ignored = (res.nabihSettings.ignoredPaymentSites) || [];
+      if (ignored.includes(window.location.hostname)) {
+        PAYMENT_WARN = false;
+        PAYMENT_TOAST = false;
+      }
+    }
+    settingsLoaded = true;
+    // الآن فقط نفّذ الفحص الأول (بعد معرفة إعدادات المستخدم)
     init();
+    ensurePaymentPageWarning();
   });
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "sync" && changes.nabihSettings) {
-      settings = { ...settings, ...changes.nabihSettings.newValue };
-      applyDisplayMode();
+    if (area !== "sync" || !changes.nabihSettings) return;
+    settings = { ...settings, ...changes.nabihSettings.newValue };
+    applyDisplayMode();
+    PAYMENT_WARN = settings.paymentWarn !== false;
+    PAYMENT_TOAST = settings.paymentToast !== false;
+    const ignored = (changes.nabihSettings.newValue?.ignoredPaymentSites) || [];
+    if (ignored.includes(window.location.hostname)) {
+      PAYMENT_WARN = false;
+      PAYMENT_TOAST = false;
     }
+    // إعادة تقييم الصفحة عند تغيير الإعدادات من النافذة المنبثقة (بينما التبويب مفتوح)
+    if (settingsLoaded) ensurePaymentPageWarning();
   });
 } else {
+  settingsLoaded = true;
   init();
+  ensurePaymentPageWarning();
 }
-
-

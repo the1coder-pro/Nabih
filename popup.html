@@ -44,6 +44,10 @@
           <span class="stat-number" id="fieldsCount">0</span>
           <span class="stat-name">حقول حساسة</span>
         </div>
+        <div class="stat-box">
+          <span class="stat-number" id="paymentCount">0</span>
+          <span class="stat-name">حقول دفع</span>
+        </div>
       </div>
     </section>
 
@@ -86,6 +90,29 @@
           <span class="slider"></span>
         </label>
       </div>
+
+      <!-- خيارات تنبيه صفحات الدفع -->
+      <div class="toggle-option">
+        <div class="toggle-info">
+          <strong>تنبيه صفحات الدفع (بطاقة إضافية)</strong>
+          <span class="toggle-desc">تنبيه عند رصد حقول أو صفحات الدفع بناءً على بطاقة غير رئيسية</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="togglePaymentWarn" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-option">
+        <div class="toggle-info">
+          <strong>إشعار منبثق للدفع (في الزاوية)</strong>
+          <span class="toggle-desc">عرض إشعار منبثق في أسفل الصفحة عند دخولك صفحة دفع</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="togglePaymentToast" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
     </section>
 
     <!--- temp mail --->
@@ -119,6 +146,8 @@
         </div>
 
         <div class="temp-mail-messages" id="mailList"></div>
+
+        <div class="temp-mail-status" id="mailStatus" role="status" aria-live="polite"></div>
 
         <p class="temp-mail-note">
           مفعّل بواسطة <a href="https://mail.tm" target="_blank" rel="noopener">mail.tm</a>

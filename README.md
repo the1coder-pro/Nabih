@@ -10,15 +10,15 @@
 
 ## افكار المشروع
 
-###  فحص المواقع
+###  فحص المواقع WIP
 - https://docs.virustotal.com/docs/api-overview
-###   تنبيه على التسجيل
-###   تنبيه على الدفع
+###   تنبيه على التسجيل done
+###   تنبيه على الدفع done
 ###   تنبيه على مواقع الذكاء الاصطناعي
 
-###    توليد كلمات السر
+###    توليد كلمات السر done
 - https://github.com/Rabbit-Company/PasswordGenerator-JS 
-###   احضار ايميلات مؤقتة
+###   احضار ايميلات مؤقتة done
 - https://docs.mail.tm/
 ###   فحص التنزيلات
 - https://docs.virustotal.com/docs/api-overview
