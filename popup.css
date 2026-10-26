@@ -317,22 +317,129 @@ input:checked + .slider:before {
   padding-top: 4px;
 }
 
-.temp-mail-block { margin-top: 18px; border-top: 1px dashed var(--border, #2a3345); padding-top: 16px; }
+.temp-mail-block {
+  margin-top: 10px;
+  border-top: 1px dashed var(--border, #334155);
+  padding-top: 12px;
+}
 
 .temp-mail-address {
-  display: flex; align-items: center; justify-content: center;
-  gap: 8px; min-height: 44px; padding: 10px 14px; margin: 12px 0;
-  background: var(--surface, #0f1420); border: 1px solid var(--border, #2a3345);
-  border-radius: 12px; font-family: ui-monospace, SFMono-Regular, monospace;
-  font-size: 13px; word-break: break-all; color: var(--accent, #4cc9f0);
-  text-align: center; direction: ltr;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  margin: 10px 0;
+  background: #0f172a;
+  border: 1px solid var(--border, #334155);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--accent, #38bdf8);
+  text-align: center;
+  direction: ltr;
 }
-.temp-mail-placeholder { color: var(--muted, #7b8494); font-family: inherit; }
+.temp-mail-placeholder { color: var(--muted, #94a3b8); font-family: inherit; font-size: 11.5px; }
 
-.temp-mail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-.temp-mail-actions .nabih-pwd-fill,
-.temp-mail-actions .nabih-focus-btn,
-.temp-mail-actions .nabih-copy-btn { width: 100%; }
+/* أزرار البريد المؤقت — متناسقة تماماً مع أسلوب وهوية الإضافة */
+.temp-mail-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.temp-mail-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-family: "IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #f1f5f9;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.temp-mail-actions button:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #38bdf8;
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.temp-mail-actions button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.temp-mail-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: #334155;
+  background: #0f172a;
+  color: #64748b;
+  pointer-events: none;
+  transform: none;
+}
+
+/* زر إنشاء بريد مؤقت (إجراء رئيسي أزرق) */
+.temp-mail-actions #btnCreateMail,
+.temp-mail-actions .btn-mail-create {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+}
+
+.temp-mail-actions #btnCreateMail:hover:not(:disabled),
+.temp-mail-actions .btn-mail-create:hover:not(:disabled) {
+  background: #0369a1;
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+/* زر تعبئة الحقل في الصفحة (إجراء تعبئة أخضر مميز) */
+.temp-mail-actions #btnFillTab,
+.temp-mail-actions .btn-mail-fill {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.temp-mail-actions #btnFillTab:hover:not(:disabled),
+.temp-mail-actions .btn-mail-fill:hover:not(:disabled) {
+  background: #059669;
+  border-color: #10b981;
+  color: #ffffff;
+}
+
+/* زر تحديث الصندوق وزر نسخ العنوان (أزرار ثانوية داكنة) */
+.temp-mail-actions #btnRefreshInbox,
+.temp-mail-actions #btnCopyMail,
+.temp-mail-actions .btn-mail-refresh,
+.temp-mail-actions .btn-mail-copy {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+.temp-mail-actions #btnRefreshInbox:hover:not(:disabled),
+.temp-mail-actions #btnCopyMail:hover:not(:disabled),
+.temp-mail-actions .btn-mail-refresh:hover:not(:disabled),
+.temp-mail-actions .btn-mail-copy:hover:not(:disabled) {
+  background: #1e293b;
+  border-color: #38bdf8;
+  color: #38bdf8;
+}
 
 .temp-mail-messages {
   display: flex; flex-direction: column; gap: 8px; max-height: 220px;

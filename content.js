@@ -13,6 +13,13 @@ const CONFIGS = {
     tip: "استخدم كلمة مرور قوية وغير مكررة لا تقل عن 12 خانة مع رموز وأرقام.",
     isPassword: true
   },
+  confirm_password: {
+    icon: "🔒",
+    name: "تأكيد كلمة المرور",
+    title: "تأكيد كلمة المرور",
+    tip: "تأكد من تطابق كلمة المرور مع الحقل السابق. يتم تعبئتها تلقائياً عند إنشاء كلمة مرور.",
+    isPassword: false
+  },
   phone: {
     icon: "📱",
     name: "رقم الهاتف",
@@ -58,25 +65,46 @@ let tooltipEl = null;
 let sidebarEl = null;
 let sidebarToggle = null;
 
+// فحص ما إذا كان الحقل مخصصاً لتأكيد كلمة المرور
+function isConfirmPasswordField(input, allAttrs = "", lowerLbl = "") {
+  const type = (input.type || "").toLowerCase();
+  const attrs = allAttrs || `${input.name || ""} ${input.id || ""} ${input.placeholder || ""} ${input.autocomplete || ""}`.toLowerCase();
+  const lbl = lowerLbl || (() => {
+    let t = "";
+    if (input.id) {
+      const el = document.querySelector(`label[for="${CSS.escape(input.id)}"]`);
+      if (el) t += " " + el.textContent;
+    }
+    const p = input.closest("label");
+    if (p) t += " " + p.textContent;
+    return t.toLowerCase();
+  })();
+
+  const confirmRegex = /\b(confirm|confirmation|repeat|retype|reenter|re-enter|re_enter|pwd2|password2|pass2|verify-password|password_verify)\b/i;
+  const arabicConfirmRegex = /(تأكيد|تاكيد|إعادة|اعادة|تكرار)/i;
+
+  if (confirmRegex.test(attrs) || arabicConfirmRegex.test(attrs)) return true;
+  if (arabicConfirmRegex.test(lbl) || confirmRegex.test(lbl)) return true;
+
+  // فحص ما إذا كان هذا الحقل هو الحقل الثاني أو اللاحق لكلمة المرور في نفس النموذج
+  if (type === "password" || /(password|pwd)/i.test(attrs)) {
+    const form = input.closest("form") || input.form;
+    if (form) {
+      const pwdInputs = Array.from(form.querySelectorAll('input[type="password"]')).filter(
+        i => !/\b(cvv|cvc|cvn|csc|card)\b/i.test(`${i.name} ${i.id} ${i.placeholder} ${i.autocomplete}`)
+      );
+      const idx = pwdInputs.indexOf(input);
+      if (idx > 0) return true;
+    }
+  }
+
+  return false;
+}
+
 // الكشف عن نوع الحقل بسرعة وبدون layout thrashing
 function detectFieldType(input) {
   const type = (input.type || "").toLowerCase();
-  if (type === "password") return "password";
-  if (type === "email") return "email";
-  if (type === "tel") return "phone";
-  if (type === "credit-card-number" || type === "cc-number" || type === "cc-exp" || type === "cc-csc") return "payment";
-
-  // ---------- PAYMENT (بطاقات الدفع) ----------
   const allAttrs = `${input.name || ""} ${input.id || ""} ${input.placeholder || ""} ${input.autocomplete || ""}`.toLowerCase();
-  if (/\b(card|credit|cc|cvv|cvc|cvn|csc|security|exp|expiry|expiration|pan|ccnum|cardnumber|card-number)\b/i.test(allAttrs)) return "payment";
-  if (/\b(visa|mastercard|amex|mada|paypal|stripe|tabby|tamara|apple.?pay|google.?pay|stc.?pay)\b/i.test(allAttrs)) return "payment";
-  
-
-  const attrs = `${input.name || ""} ${input.id || ""} ${input.placeholder || ""} ${input.autocomplete || ""}`.toLowerCase();
-  if (/\b(password|pwd|secret|كلمة المرور|السر)\b/i.test(attrs) && !/\bpassport\b/i.test(attrs)) return "password";
-  if (/\b(email|mail|بريد|ايميل)\b/i.test(attrs)) return "email";
-  if (/\b(phone|mobile|tel|هاتف|جوال)\b/i.test(attrs)) return "phone";
-  if (/\b(username|user|login|اسم المستخدم|المعرف)\b/i.test(attrs)) return "username";
 
   let labelText = "";
   if (input.id) {
@@ -85,16 +113,38 @@ function detectFieldType(input) {
   }
   const parent = input.closest("label");
   if (parent) labelText += " " + parent.textContent;
+  const lowerLbl = labelText.toLowerCase();
 
-  if (labelText) {
-    labelText = labelText.toLowerCase();
-    if (/\b(password|كلمة المرور|السر)\b/i.test(labelText)) return "password";
-    if (/\b(email|بريد|ايميل)\b/i.test(labelText)) return "email";
-    if (/\b(phone|هاتف|جوال)\b/i.test(labelText)) return "phone";
-    if (/\b(username|اسم المستخدم)\b/i.test(labelText)) return "username";
-    // بطاقة الدفع: نربطها بكلمات مفتاحية خاصة بالبطاقات لتجنب الخلط مع "رقم الهاتف"
-    if (/\b(card|credit|cc|cvv|cvv2|cvc|شريحة|بطاقة|فيزا|ماستركارد|مدى|مدفوعة|دفع|visa|mastercard|mada)\b/i.test(labelText)) return "payment";
-  }
+  // ---------- PAYMENT (بطاقات الدفع) ----------
+  // نفحص حقول الدفع أولاً لأن حقول CVV/CVC تكون غالباً type="password" حتى لا تظهر ككلمة مرور!
+  if (type === "credit-card-number" || type === "cc-number" || type === "cc-exp" || type === "cc-csc") return "payment";
+  if (/\b(card|credit|cc|cvv|cvc|cvn|csc|security|exp|expiry|expiration|pan|ccnum|cardnumber|card-number)\b/i.test(allAttrs)) return "payment";
+  if (/\b(visa|mastercard|amex|mada|paypal|stripe|tabby|tamara|apple.?pay|google.?pay|stc.?pay)\b/i.test(allAttrs)) return "payment";
+  if (/\b(card|credit|cc|cvv|cvv2|cvc|شريحة|بطاقة|فيزا|ماستركارد|مدى|مدفوعة|دفع|visa|mastercard|mada|أمان|امان)\b/i.test(lowerLbl)) return "payment";
+
+  // ---------- CONFIRM PASSWORD (تأكيد كلمة المرور) ----------
+  // حقول تأكيد كلمة المرور نميزها كي لا ننشئ لها مولّد كلمة مرور مكرر
+  if (isConfirmPasswordField(input, allAttrs, lowerLbl)) return "confirm_password";
+
+  // ---------- PASSWORD (كلمة المرور) ----------
+  if (type === "password") return "password";
+  if (/\b(password|pwd|secret|كلمة المرور|السر)\b/i.test(allAttrs) && !/\bpassport\b/i.test(allAttrs)) return "password";
+  if (/\b(password|كلمة المرور|السر)\b/i.test(lowerLbl)) return "password";
+
+  // ---------- EMAIL (البريد الإلكتروني) ----------
+  if (type === "email") return "email";
+  if (/\b(email|mail|بريد|ايميل)\b/i.test(allAttrs)) return "email";
+  if (/\b(email|بريد|ايميل)\b/i.test(lowerLbl)) return "email";
+
+  // ---------- PHONE (رقم الهاتف) ----------
+  if (type === "tel") return "phone";
+  if (/\b(phone|mobile|tel|هاتف|جوال)\b/i.test(allAttrs)) return "phone";
+  if (/\b(phone|هاتف|جوال)\b/i.test(lowerLbl)) return "phone";
+
+  // ---------- USERNAME (اسم المستخدم) ----------
+  if (/\b(username|user|login|اسم المستخدم|المعرف)\b/i.test(allAttrs)) return "username";
+  if (/\b(username|اسم المستخدم)\b/i.test(lowerLbl)) return "username";
+
   return null;
 }
 
@@ -104,13 +154,23 @@ function fillPassword(targetInput, value) {
   targetInput.dispatchEvent(new Event("input", { bubbles: true }));
   targetInput.dispatchEvent(new Event("change", { bubbles: true }));
 
-  const form = targetInput.closest("form");
+  const form = targetInput.closest("form") || targetInput.form;
   if (form) {
     form.querySelectorAll('input[type="password"]').forEach(p => {
-      if (p !== targetInput) {
+      // نملأ حقول كلمات المرور الأخرى فقط إذا لم تكن حقول دفع (مثل CVV)
+      if (p !== targetInput && detectFieldType(p) !== "payment") {
         p.value = value;
         p.dispatchEvent(new Event("input", { bubbles: true }));
         p.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+  } else {
+    // خارج النموذج الصريح: نملأ حقول كلمات المرور والتأكيد المرتبطة
+    detectedFields.forEach(item => {
+      if (item.input !== targetInput && (item.type === "password" || item.type === "confirm_password")) {
+        item.input.value = value;
+        item.input.dispatchEvent(new Event("input", { bubbles: true }));
+        item.input.dispatchEvent(new Event("change", { bubbles: true }));
       }
     });
   }
@@ -134,6 +194,7 @@ function createTempMailBlock(targetInput) {
     <div class="nabih-tm-address" title="اضغط لنسخ العنوان">لم يتم الإنشاء بعد</div>
     <div class="nabih-tm-actions">
       <button type="button" class="nabih-pwd-fill nabih-tm-create">إنشاء بريد مؤقت</button>
+      <button type="button" class="nabih-focus-btn nabih-tm-fill" disabled title="تعبئة العنوان في هذا الحقل">⬇️ تعبئة الحقل</button>
       <button type="button" class="nabih-focus-btn nabih-tm-inbox" disabled>تحديث الصندوق</button>
     </div>
     <div class="nabih-tm-meta">
@@ -148,6 +209,7 @@ function createTempMailBlock(targetInput) {
   const metaCount = box.querySelector(".nabih-tm-count");
   const metaStatus = box.querySelector(".nabih-tm-status");
   const createBtn = box.querySelector(".nabih-tm-create");
+  const fillBtn = box.querySelector(".nabih-tm-fill");
   const inboxBtn = box.querySelector(".nabih-tm-inbox");
   const msgBox = box.querySelector(".nabih-tm-messages");
   let address = null;
@@ -156,6 +218,18 @@ function createTempMailBlock(targetInput) {
     metaStatus.textContent = text || "";
     metaStatus.style.color = ok === false ? "#f87171" : "#34d399";
   }
+
+  const fillField = async (e) => {
+    if (e) e.stopPropagation();
+    if (!address) return;
+    targetInput.value = address;
+    targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+    targetInput.dispatchEvent(new Event("change", { bubbles: true }));
+    targetInput.focus();
+    await navigator.clipboard.writeText(address).catch(() => {});
+    status("تمت تعبئة البريد في الحقل", true);
+  };
+  fillBtn.onclick = fillField;
 
   function render(list = []) {
     // list قد يكون مصفوفة (توافق قديم) أو {items, total, full} من المعالج الجديد
@@ -268,10 +342,12 @@ function createTempMailBlock(targetInput) {
       addrEl.title = "اضغط لنسخ العنوان";
       addrEl.classList.add("nabih-tm-has");
       inboxBtn.disabled = false;
+      fillBtn.disabled = false;
       targetInput.value = address;
       targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+      targetInput.dispatchEvent(new Event("change", { bubbles: true }));
       await chrome.storage.local.set({ nabihTempMail: address });
-      status("تم الإنشاء");
+      status("تم الإنشاء والتعبئة", true);
       inboxBtn.click();
     } catch (err) {
       status("خطأ: " + err.message, false);
@@ -309,6 +385,7 @@ function createTempMailBlock(targetInput) {
       addrEl.textContent = address;
       addrEl.classList.add("nabih-tm-has");
       inboxBtn.disabled = false;
+      fillBtn.disabled = false;
       metaCount.textContent = "0 رسالة";
       status("تم استعادة العنوان");
     }
@@ -642,50 +719,130 @@ function positionBadge(input, badge) {
   }
 }
 
-// الشريط الجانبي
-function getSidebar() {
-  if (!sidebarEl) {
-    sidebarEl = document.createElement("aside");
-    sidebarEl.id = "nabih-sidebar";
-    sidebarEl.className = "nabih-sidebar";
-    sidebarEl.dir = "rtl";
+// ============================================================
+// نبيه | الشريط الجانبي (Sidebar) — يتم تحميله من sidebar.html
+// ============================================================
 
-    sidebarToggle = document.createElement("button");
-    sidebarToggle.id = "nabih-sidebar-toggle";
-    sidebarToggle.className = "nabih-sidebar-toggle";
-    sidebarToggle.type = "button";
-    sidebarToggle.innerHTML = "🔒 تنبيهات نبيه";
-    sidebarToggle.onclick = () => sidebarEl.classList.toggle("open");
+let sidebarLoaded = false;
+let sidebarLoadPromise = null;
 
-    document.body.appendChild(sidebarEl);
-    document.body.appendChild(sidebarToggle);
-  }
-  return sidebarEl;
+async function loadSidebarFile() {
+  if (sidebarLoaded && sidebarEl) return sidebarEl;
+  if (sidebarLoadPromise) return sidebarLoadPromise;
+
+  sidebarLoadPromise = (async () => {
+    try {
+      let html = "";
+      if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
+        try {
+          const url = chrome.runtime.getURL("sidebar.html");
+          const res = await fetch(url);
+          if (res.ok) html = await res.text();
+        } catch (e) { /* fallback */ }
+      }
+      if (!html) {
+        try {
+          const res = await fetch("sidebar.html");
+          if (res.ok) html = await res.text();
+        } catch (e) { /* fallback */ }
+      }
+
+      if (html) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const aside = doc.getElementById("nabih-sidebar") || doc.querySelector("aside.nabih-sidebar");
+        const toggle = doc.getElementById("nabih-sidebar-toggle") || doc.querySelector("button.nabih-sidebar-toggle");
+
+        if (aside && !document.getElementById("nabih-sidebar")) {
+          document.body.appendChild(aside);
+          sidebarEl = aside;
+        } else {
+          sidebarEl = document.getElementById("nabih-sidebar");
+        }
+
+        if (toggle && !document.getElementById("nabih-sidebar-toggle")) {
+          document.body.appendChild(toggle);
+          sidebarToggle = toggle;
+        } else {
+          sidebarToggle = document.getElementById("nabih-sidebar-toggle");
+        }
+      }
+    } catch (err) {
+      console.warn("[Nabih] Error loading sidebar.html:", err);
+    }
+
+    // احتياطي أمان: إذا تعذر جلب الملف (مثل قيود بروتوكول file:// بدون سيرفر)
+    if (!sidebarEl || !document.getElementById("nabih-sidebar")) {
+      sidebarEl = document.createElement("aside");
+      sidebarEl.id = "nabih-sidebar";
+      sidebarEl.className = "nabih-sidebar";
+      sidebarEl.dir = "rtl";
+      sidebarEl.innerHTML = `
+        <div class="nabih-sidebar-head ibm-plex-sans-arabic-regular">
+          <strong>🔒 نبيه | لوحة التنبيهات</strong>
+          <button type="button" class="nabih-sidebar-close" id="nabih-sidebar-close" title="إغلاق">✕</button>
+        </div>
+        <div class="nabih-sidebar-body" id="nabih-sidebar-cards">
+          <div class="nabih-sidebar-empty">✅ لم يتم رصد حقول حساسة</div>
+        </div>
+      `;
+      document.body.appendChild(sidebarEl);
+    } else {
+      sidebarEl = document.getElementById("nabih-sidebar");
+    }
+
+    if (!sidebarToggle || !document.getElementById("nabih-sidebar-toggle")) {
+      sidebarToggle = document.createElement("button");
+      sidebarToggle.id = "nabih-sidebar-toggle";
+      sidebarToggle.className = "nabih-sidebar-toggle";
+      sidebarToggle.type = "button";
+      sidebarToggle.innerHTML = "🔒 تنبيهات نبيه";
+      document.body.appendChild(sidebarToggle);
+    } else {
+      sidebarToggle = document.getElementById("nabih-sidebar-toggle");
+    }
+
+    // ربط الأحداث
+    if (sidebarToggle && sidebarEl) {
+      sidebarToggle.onclick = () => sidebarEl.classList.toggle("open");
+    }
+    const closeBtn = sidebarEl?.querySelector(".nabih-sidebar-close");
+    if (closeBtn && sidebarEl) {
+      closeBtn.onclick = () => sidebarEl.classList.remove("open");
+    }
+
+    sidebarLoaded = true;
+    return sidebarEl;
+  })();
+
+  return sidebarLoadPromise;
+}
+
+async function ensureSidebar() {
+  if (sidebarEl && sidebarToggle) return sidebarEl;
+  return await loadSidebarFile();
 }
 
 function updateSidebarContent() {
   if (!sidebarEl) return;
 
-  sidebarEl.innerHTML = `
-    <div class="nabih-sidebar-head ibm-plex-sans-arabic-regular">
-      <strong>🔒 نبيه | لوحة التنبيهات</strong>
-      <button type="button" class="nabih-sidebar-close">✕</button>
-    </div>
-    <div class="nabih-sidebar-body" id="nabih-sidebar-cards"></div>
-  `;
-
-  sidebarEl.querySelector(".nabih-sidebar-close").onclick = () => {
-    sidebarEl.classList.remove("open");
-  };
-
   const bodyEl = sidebarEl.querySelector("#nabih-sidebar-cards");
+  if (!bodyEl) return;
+
+  bodyEl.innerHTML = "";
+
   if (detectedFields.length === 0) {
     bodyEl.innerHTML = '<div class="nabih-sidebar-empty">✅ لم يتم رصد حقول حساسة</div>';
     return;
   }
 
+  // نتأكد من عدم عرض أكثر من مولد كلمة مرور واحد في نفس الوقت
+  let hasPasswordGenerator = false;
+
   detectedFields.forEach((item) => {
     const cfg = CONFIGS[item.type];
+    if (!cfg) return;
+
     const card = document.createElement("div");
     card.className = `nabih-sidebar-card nabih-card-${item.type}`;
     card.innerHTML = `
@@ -709,7 +866,7 @@ function updateSidebarContent() {
           <li>❌ احذر التجارب المجانية التي تتحول لاشتراكات متكررة.</li>
         </ul>
         <label class="nabih-dont-show">
-          <input type="checkbox" class="nabih-payment-ignore" type="checkbox"> لا تنبّهني في هذا الموقع
+          <input type="checkbox" class="nabih-payment-ignore"> لا تنبّهني في هذا الموقع
         </label>`;
       card.appendChild(warn);
 
@@ -732,8 +889,12 @@ function updateSidebarContent() {
       showPaymentWarning(item);
     }
 
+    // مولّد كلمة المرور يظهر مع حقول كلمة المرور — نمنع ظهور اثنين في نفس الوقت
     if (cfg.isPassword) {
-      card.appendChild(createPwdBlock(item.input, null));
+      if (!hasPasswordGenerator) {
+        card.appendChild(createPwdBlock(item.input, null));
+        hasPasswordGenerator = true;
+      }
     }
 
     const focusBtn = document.createElement("button");
@@ -751,14 +912,14 @@ function updateSidebarContent() {
 }
 
 // تطبيق نمط العرض
-function applyDisplayMode() {
+async function applyDisplayMode() {
   const isSidebar = settings.displayMode === "sidebar";
   if (isSidebar) {
     detectedFields.forEach(item => { if (item.badge) item.badge.style.display = "none"; });
     hideTooltip();
-    getSidebar();
-    sidebarEl.style.display = "flex";
-    sidebarToggle.style.display = "block";
+    await ensureSidebar();
+    if (sidebarEl) sidebarEl.style.display = "flex";
+    if (sidebarToggle) sidebarToggle.style.display = "block";
     updateSidebarContent();
   } else {
     if (sidebarEl) {
@@ -837,7 +998,11 @@ function scanPage() {
   });
 
   if (hasNew && settings.displayMode === "sidebar") {
-    updateSidebarContent();
+    if (!sidebarEl) {
+      ensureSidebar().then(() => updateSidebarContent());
+    } else {
+      updateSidebarContent();
+    }
   }
 
   // تحديث حيّ لعداد "حقول الدفع" في النافذة المنبثقة (تتغير مع الحقول المتأخرة)
@@ -936,12 +1101,16 @@ if (typeof chrome !== "undefined" && chrome.runtime?.onMessage) {
 
 // بدء التشغيل وتحميل الإعدادات
 function init() {
+  ensureSidebar();
+
   if (document.body) {
     scanPage();
+    applyDisplayMode();
     observer.observe(document.body, { childList: true, subtree: true });
   } else {
     document.addEventListener("DOMContentLoaded", () => {
       scanPage();
+      applyDisplayMode();
       observer.observe(document.body, { childList: true, subtree: true });
     });
   }

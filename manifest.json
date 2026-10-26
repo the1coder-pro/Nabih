@@ -36,7 +36,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["Lock.png"],
+      "resources": ["Lock.png", "sidebar.html"],
       "matches": ["<all_urls>"]
     }
   ]
