@@ -1,0 +1,29 @@
+/* يعتمد على متغيرات الألوان نفسها في style.css (slate + sky) */
+html, body { margin: 0; width: 380px; min-height: 200px; background: #0f172a; color: #f8fafc; }
+body { font-family: "IBM Plex Sans Arabic", sans-serif; }
+.vt-wrap { padding: 16px 14px 18px; display: flex; flex-direction: column; gap: 12px; }
+.vt-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.vt-head strong { color: #38bdf8; font-size: 20px; }
+.vt-head span { color: #94a3b8; font-size: 13px; }
+.vt-wrap .nabih-sidebar-card { padding: 14px; font-size: 13px; }
+.vt-target code { font-family: monospace; font-size: 12px; color: #4cc9f0; word-break: break-all; text-align: left; }
+.vt-state { align-items: center; text-align: center; padding: 28px 14px; }
+.vt-spinner { width: 26px; height: 26px; border: 3px solid #334155; border-top-color: #38bdf8; border-radius: 50%; animation: vt-spin .9s linear infinite; }
+.vt-state:not([data-state="loading"]) .vt-spinner { display: none; }
+.vt-state[data-state="error"] { border-right: 3px solid #ef4444; }
+.vt-state[data-state="error"] strong { color: #fca5a5; }
+@keyframes vt-spin { to { transform: rotate(360deg); } }
+.vt-verdict { padding: 18px 16px; border-right-width: 4px; border-right-style: solid; margin-bottom: 10px; }
+.vt-verdict strong { font-size: 22px; }
+.vt-verdict[data-verdict="clean"] { border-right-color: #10b981; background: rgba(16,185,129,.08); }
+.vt-verdict[data-verdict="clean"] strong { color: #34d399; }
+.vt-verdict[data-verdict="suspicious"] { border-right-color: #f59e0b; background: rgba(245,158,11,.1); }
+.vt-verdict[data-verdict="suspicious"] strong { color: #fbbf24; }
+.vt-verdict[data-verdict="malicious"] { border-right-color: #ef4444; background: rgba(239,68,68,.1); }
+.vt-verdict[data-verdict="malicious"] strong { color: #f87171; }
+.vt-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+.vt-stats .nabih-sidebar-card { padding: 10px; align-items: flex-start; }
+.vt-stats strong { font-size: 20px; font-family: monospace; }
+.vt-flagged { margin: 0; padding: 0 16px 0 0; font-size: 12px; color: #cbd5e1; line-height: 1.8; direction: ltr; text-align: left; }
+.vt-link { display: block; text-align: center; text-decoration: none; padding: 10px; margin-top: 10px; font-size: 12.5px; }
+@media (prefers-reduced-motion: reduce) { .vt-spinner { animation: none; } }

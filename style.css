@@ -433,9 +433,7 @@
 .nabih-tm-msg small { color: #94a3b8; font-size: 10px; }
 .nabih-tm-empty { color: #64748b; font-size: 11px; text-align: center; padding: 4px; }
 .nabih-tm-note { color: #64748b; font-size: 10px; line-height: 1.4; }
-<<<<<<< HEAD
-.nabih-scan-btn { }
-=======
+
 
 /* --- تنبيه صفحات الدفع (داخل الشريط الجانبي) --- */
 .nabih-payment-warn {
@@ -481,4 +479,20 @@
   border-radius: 6px; padding: 6px; cursor: pointer; user-select: all;
 }
 .nabih-tm-code:hover { background: rgba(245,158,11,.12); }
->>>>>>> refs/remotes/origin/main
+
+/* --- فحص رابط يدوي (popup) --- */
+.nabih-scan-form { display: flex; gap: 6px; margin-top: 8px; }
+.nabih-scan-input {
+  flex: 1; min-width: 0; background: #0f172a; border: 1px solid #475569; color: #f8fafc;
+  border-radius: 5px; padding: 6px 8px; font-size: 12px; font-family: monospace;
+  direction: ltr; text-align: left; outline: none;
+}
+.nabih-scan-input:focus { border-color: #38bdf8; }
+.nabih-scan-input::placeholder { color: #64748b; font-family: "IBM Plex Sans Arabic", sans-serif; direction: rtl; }
+.nabih-scan-input.invalid { border-color: #ef4444; }
+.nabih-scan-go {
+  background: #0284c7; color: #fff; border: none; border-radius: 5px; padding: 0 12px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.nabih-scan-go:hover { background: #0369a1; }
+.nabih-scan-error { margin: 4px 0 0; min-height: 14px; font-size: 11px; color: #fca5a5; }

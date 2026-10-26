@@ -21,10 +21,12 @@
     "default_popup": "popup.html",
     "default_title": "نبيه | حارس الوعي والبيانات"
   },
-  "permissions": [
-    "activeTab",
-    "storage"
-  ],
+  "permissions":
+   ["tabs", "storage"],
+   
+  "host_permissions":
+   ["https://www.virustotal.com/*"],
+
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

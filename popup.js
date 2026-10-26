@@ -258,6 +258,60 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+const input = document.getElementById("scan-input");
+const errorEl = document.getElementById("scan-error");
+
+function normalize(raw) {
+  let value = raw.trim();
+  if (!value) throw new Error("أدخل رابطًا أولًا.");
+  // example.com -> https://example.com
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) value = "https://" + value;
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error("الرابط غير صالح.");
+  }
+  if (!["http:", "https:"].includes(parsed.protocol) || !parsed.hostname.includes(".")) {
+    throw new Error("أدخل رابط http:// أو https:// صالحًا.");
+  }
+  return parsed.href;
+}
+
+// Same popup, no new tab
+function goScan(url) {
+  location.href = "vt-scan.html?url=" + encodeURIComponent(url);
+}
+
+// 1) typed / pasted URL (button or Enter)
+document.getElementById("scan-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  try {
+    errorEl.textContent = "";
+    input.classList.remove("invalid");
+    goScan(normalize(input.value));
+  } catch (err) {
+    errorEl.textContent = err.message;
+    input.classList.add("invalid");
+    input.focus();
+  }
+});
+
+input.addEventListener("input", () => {
+  errorEl.textContent = "";
+  input.classList.remove("invalid");
+});
+
+// 2) current tab
+document.getElementById("scan-btn").addEventListener("click", async () => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  try {
+    goScan(normalize(tab?.url || ""));
+  } catch {
+    errorEl.textContent = "لا يمكن فحص هذه الصفحة.";
+  }
+});
+
   // ===== تحميل الإعدادات المحفوظة =====
   api?.storage?.sync?.get(["nabihSettings"], (res) => {
     const s = res?.nabihSettings;
