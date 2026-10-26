@@ -61,6 +61,45 @@ const VERDICTS = {
   malicious:  ["خبيث", "أبلغت محركات فحص عن الرابط كخبيث. لا تُدخل أي بيانات فيه."],
 };
 
+let currentUrl = "";
+
+function saveScanReport(url, json) {
+  try {
+    const { stats, results } = json.data.attributes;
+    const key = stats.malicious > 0 ? "malicious" : stats.suspicious > 0 ? "suspicious" : "clean";
+    const urlId = json.meta?.url_info?.id;
+    let hostname = "";
+    try { hostname = new URL(url).hostname; } catch { hostname = url; }
+
+    const report = {
+      id: "scan_" + Date.now(),
+      url: url,
+      domain: hostname,
+      timestamp: Date.now(),
+      verdict: key,
+      verdictText: VERDICTS[key][0],
+      stats: {
+        malicious: stats.malicious || 0,
+        suspicious: stats.suspicious || 0,
+        harmless: stats.harmless || 0,
+        undetected: stats.undetected || 0,
+      },
+      vtUrl: urlId ? `https://www.virustotal.com/gui/url/${urlId}` : null,
+      rawJson: json
+    };
+
+    if (typeof chrome !== "undefined" && chrome.storage?.local) {
+      chrome.storage.local.get(["nabihScanReports"], (res) => {
+        const list = Array.isArray(res?.nabihScanReports) ? res.nabihScanReports : [];
+        const updated = [report, ...list.filter(item => item.url !== url)].slice(0, 30);
+        chrome.storage.local.set({ nabihScanReports: updated });
+      });
+    }
+  } catch (err) {
+    console.warn("[Nabih] Could not save scan report:", err);
+  }
+}
+
 function render(json) {
   const { stats, results } = json.data.attributes;
   const key = stats.malicious > 0 ? "malicious" : stats.suspicious > 0 ? "suspicious" : "clean";
@@ -85,6 +124,8 @@ function render(json) {
       li.textContent = `${r.engine_name}: ${r.result} (${r.category})`;
       return li;
     }));
+  } else {
+    $("vt-flagged-box").hidden = true;
   }
 
   const urlId = json.meta?.url_info?.id;
@@ -93,10 +134,18 @@ function render(json) {
     a.href = `https://www.virustotal.com/gui/url/${urlId}`;
     a.hidden = false;
   }
+
+  const rescanBtn = $("vt-rescan");
+  if (rescanBtn) rescanBtn.hidden = false;
+
+  if (currentUrl) {
+    saveScanReport(currentUrl, json);
+  }
 }
 
 async function scan(apiKey, url) {
   try {
+    $("vt-result").hidden = true;
     setState("loading", "جارٍ إرسال الرابط…");
     const id = await submitUrl(apiKey, url);
     setState("loading", "جارٍ تحليل الرابط…");
@@ -107,17 +156,37 @@ async function scan(apiKey, url) {
 }
 
 async function main() {
-  let url;
   try {
-    url = validateUrl(new URLSearchParams(location.search).get("url") || "");
+    currentUrl = validateUrl(new URLSearchParams(location.search).get("url") || "");
   } catch (err) {
     return setState("error", "لا يوجد رابط للفحص", err.message);
   }
-  $("vt-url").textContent = url;
+  $("vt-url").textContent = currentUrl;
 
-  scan(API_KEY, url);
+  const force = new URLSearchParams(location.search).get("force") === "1";
+
+  if (!force && typeof chrome !== "undefined" && chrome.storage?.local) {
+    chrome.storage.local.get(["nabihScanReports"], (res) => {
+      const list = res?.nabihScanReports || [];
+      const cached = list.find(r => r.url === currentUrl);
+      if (cached && cached.rawJson && (Date.now() - (cached.timestamp || 0) < 1800000)) {
+        render(cached.rawJson);
+        return;
+      }
+      scan(API_KEY, currentUrl);
+    });
+  } else {
+    scan(API_KEY, currentUrl);
+  }
 }
 
 $("vt-back").addEventListener("click", () => { location.href = "popup.html"; });
+
+const rescanBtn = $("vt-rescan");
+if (rescanBtn) {
+  rescanBtn.addEventListener("click", () => {
+    scan(API_KEY, currentUrl);
+  });
+}
 
 main();

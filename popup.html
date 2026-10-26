@@ -29,16 +29,20 @@
       </p>
     </section>
 
-    <!-- إحصائيات الصفحة الحالية -->
+    <!-- إحصائيات الصفحة وفحص الروابط -->
     <section class="page-stats-card">
       <div class="stats-head">
-        <span class="stats-icon">🌐</span>
-        <span class="stats-domain" id="siteDomain">جاري الفحص...</span>
+        <div class="stats-site-info">
+          <span class="stats-icon">🌐</span>
+          <span class="stats-domain" id="siteDomain">جاري الفحص...</span>
+        </div>
+        <button id="scan-btn" class="scan-current-btn nabih-focus-btn" type="button" title="فحص الصفحة الحالية">
+          🔍 فحص الصفحة
+        </button>
       </div>
+
       <div class="stats-row">
-        <form id="scan-form" class="nabih-scan-form" novalidate> <input id="scan-input" class="nabih-scan-input" type="text" dir="ltr" placeholder="الصق رابطًا للفحص" autocomplete="off" spellcheck="false"> <button type="submit" class="nabih-scan-go">فحص</button> </form> <p id="scan-error" class="nabih-scan-error" role="alert"></p> <button id="scan-btn" class="nabih-focus-btn" type="button">افحص الصفحة الحالية</button>
         <div class="stat-box">
-          
           <span class="stat-number" id="fieldsCount">0</span>
           <span class="stat-name">حقول حساسة</span>
         </div>
@@ -46,6 +50,30 @@
           <span class="stat-number" id="paymentCount">0</span>
           <span class="stat-name">حقول دفع</span>
         </div>
+      </div>
+
+      <form id="scan-form" class="nabih-scan-form" novalidate>
+        <input id="scan-input" class="nabih-scan-input" type="text" dir="ltr" placeholder="الصق رابطًا لفحصه (https://...)" autocomplete="off" spellcheck="false">
+        <button type="submit" class="nabih-scan-go">فحص الرابط</button>
+      </form>
+      <p id="scan-error" class="nabih-scan-error" role="alert"></p>
+    </section>
+
+    <!-- تقارير فحص الروابط (VirusTotal) -->
+    <section class="settings-card scan-reports-card" id="scanReportsSection">
+      <div class="reports-header">
+        <div class="reports-title-wrap">
+          <span class="reports-icon">📑</span>
+          <h2 class="settings-title">تقارير فحص الروابط</h2>
+          <span class="reports-badge" id="reportsCountBadge">0</span>
+        </div>
+        <button type="button" class="btn-clear-reports" id="btnClearReports" title="مسح سجل تقارير الفحص">
+          مسح الكل
+        </button>
+      </div>
+
+      <div class="reports-list" id="scanReportsList">
+        <div class="reports-empty">لا توجد تقارير فحص سابقة</div>
       </div>
     </section>
 
