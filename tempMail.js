@@ -2,10 +2,52 @@
 // نبيه | البريد المؤقت (mail.tm) — خدمة الخلفية (Service Worker)
 // يحمل كـ background.service_worker في manifest.json
 // جميع استدعاءات api.mail.tm تمر من هنا فقط.
+// متوافق بالكامل مع معايير ومتطلبات Safari على iOS و macOS
 // ============================================================
+
+const api = typeof browser !== "undefined" && browser.runtime ? browser : (typeof chrome !== "undefined" ? chrome : self);
 
 const API = "https://api.mail.tm";
 const json = { "Content-Type": "application/json" };
+
+function generateUUID() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+function getStorage(keys) {
+  return new Promise((resolve) => {
+    try {
+      const res = api.storage?.local?.get(keys, (data) => {
+        resolve(data || {});
+      });
+      if (res && typeof res.then === "function") {
+        res.then(resolve).catch(() => resolve({}));
+      }
+    } catch {
+      resolve({});
+    }
+  });
+}
+
+function setStorage(items) {
+  return new Promise((resolve) => {
+    try {
+      const res = api.storage?.local?.set(items, () => resolve(true));
+      if (res && typeof res.then === "function") {
+        res.then(() => resolve(true)).catch(() => resolve(false));
+      }
+    } catch {
+      resolve(false);
+    }
+  });
+}
 
 // إعادة المحاولة مع تأخير متزايد (exponential backoff) للتعامل مع خطأ 429
 async function request(path, init = {}, tries = 3) {
@@ -33,7 +75,7 @@ const handlers = {
     if (!domain) throw new Error("لا تتوفر نطاقات بريد حالياً");
 
     const address = `nabih-${Date.now()}@${domain}`;
-    const password = crypto.randomUUID();
+    const password = generateUUID();
 
     await request("/accounts", {
       method: "POST", headers: json,
@@ -46,7 +88,7 @@ const handlers = {
     });
 
     // حفظ كل ما نحتاجه: التوكن ينتهي، كلمة المرور تُستخدم لإنشاء توكن جديد
-    await chrome.storage.local.set({
+    await setStorage({
       nabihTempMail: address,
       nabihTempToken: tok.token,
       nabihTempId: tok.id,
@@ -57,7 +99,7 @@ const handlers = {
   },
 
   async inbox() {
-    const { nabihTempToken } = await chrome.storage.local.get("nabihTempToken");
+    const { nabihTempToken } = await getStorage("nabihTempToken");
     if (!nabihTempToken) throw new Error("لم يتم إنشاء بريد بعد");
     // صفحة واحدة = حتى 30 رسالة (حسب المستند)؛ العدد الكلي في hydra:totalItems
     const box = await request("/messages?page=1", {
@@ -82,7 +124,7 @@ const handlers = {
   },
 
   async read({ id }) {
-    const { nabihTempToken } = await chrome.storage.local.get("nabihTempToken");
+    const { nabihTempToken } = await getStorage("nabihTempToken");
     if (!nabihTempToken) throw new Error("لم يتم إنشاء بريد بعد");
     const full = await request(`/messages/${id}`, {
       headers: { Authorization: `Bearer ${nabihTempToken}` }
@@ -123,7 +165,7 @@ const handlers = {
   },
 
   async remove({ id }) {
-    const { nabihTempToken } = await chrome.storage.local.get("nabihTempToken");
+    const { nabihTempToken } = await getStorage("nabihTempToken");
     if (!nabihTempToken) throw new Error("لم يتم إنشاء بريد بعد");
     return fetch(API + `/messages/${id}`, {
       method: "DELETE",
@@ -132,7 +174,7 @@ const handlers = {
   }
 };
 
-chrome.runtime.onMessage.addListener((msg, sender, done) => {
+api.runtime?.onMessage?.addListener((msg, sender, done) => {
   (handlers[msg?.type]?.(msg) ?? Promise.reject(new Error("أمر غير معروف")))
     .then(data => done({ ok: true, data }))
     .catch(err => done({ ok: false, error: err.message, status: err.status }));

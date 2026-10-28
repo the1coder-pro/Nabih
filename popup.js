@@ -3,7 +3,37 @@
 // ============================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  const api = typeof chrome !== "undefined" ? chrome : browser;
+  const api = typeof browser !== "undefined" && browser.runtime ? browser : (typeof chrome !== "undefined" ? chrome : window.browser);
+
+  async function copyTextSafely(text) {
+    if (!text) return false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (e) {
+      // Fallback for iOS Safari when user gesture expires after async tasks
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "-9999px";
+      ta.style.left = "-9999px";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, 99999);
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch {
+      return false;
+    }
+  }
 
   // عناصر الرأس والإحصائيات
   const siteDomainEl    = document.getElementById("siteDomain");
@@ -343,7 +373,7 @@ document.addEventListener("DOMContentLoaded", () => {
       c.title = "انقر لنسخ كود التحقق";
       c.onclick = async (e) => {
         e.stopPropagation();
-        await navigator.clipboard.writeText(code);
+        await copyTextSafely(code);
         if (statusEl) statusEl.textContent = `✓ ${code}`;
       };
       body.appendChild(c);
@@ -362,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
         a.rel = "noopener noreferrer";
         a.onclick = (e) => {
           e.stopPropagation();
-          navigator.clipboard.writeText(u);
+          copyTextSafely(u);
           if (statusEl) statusEl.textContent = "✓ تم نسخ الرابط";
         };
         lb.appendChild(a);
@@ -437,7 +467,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const links = Array.isArray(full.links) ? full.links : [];
                 const code = full.code || null;
                 const toCopy = code || links[0] || full.text || "";
-                if (toCopy) await navigator.clipboard.writeText(toCopy);
+                if (toCopy) await copyTextSafely(toCopy);
 
                 renderMessageBody(row, full, code, links);
 
@@ -446,7 +476,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 else statusEl.textContent = "✓ تم نسخ النص";
 
                 if (links.length && !ev.target.closest(".temp-mail-link")) {
-                  api.tabs.create ? api.tabs.create({ url: links[0], active: false }) : window.open(links[0], "_blank", "noopener");
+                  api.tabs?.create ? api.tabs.create({ url: links[0], active: false }) : window.open(links[0], "_blank", "noopener");
                 }
               } catch (e) {
                 if (statusEl) statusEl.textContent = "خطأ: " + e.message;
@@ -468,7 +498,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnCopyMail.onclick = async () => {
       if (!currentAddress) return;
       try {
-        await navigator.clipboard.writeText(currentAddress);
+        await copyTextSafely(currentAddress);
         if (statusEl) statusEl.textContent = "✓ تم نسخ العنوان بنجاح";
       } catch (e) { console.error(e); }
     };

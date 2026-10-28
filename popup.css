@@ -57,22 +57,39 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  box-sizing: border-box;
 }
 
 body {
-  width: 350px;
+  width: 100%;
+  max-width: 420px;
+  min-width: 320px;
+  margin: 0 auto;
   background: #0f172a;
   color: #f1f5f9;
   direction: rtl;
+  -webkit-user-select: none;
   user-select: none;
+  font-family: "IBM Plex Sans Arabic", -apple-system, BlinkMacSystemFont, "SF Arabic", "Geeza Pro", "Segoe UI", sans-serif;
 }
 
 .popup-wrapper {
   padding: 14px;
+  padding-top: max(14px, env(safe-area-inset-top, 14px));
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 14px));
+  padding-left: max(14px, env(safe-area-inset-left, 14px));
+  padding-right: max(14px, env(safe-area-inset-right, 14px));
   display: flex;
   flex-direction: column;
   gap: 10px;
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* الترويسة */
@@ -185,6 +202,8 @@ body {
   text-overflow: ellipsis;
   direction: ltr;
   text-align: left;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .scan-current-btn {
@@ -192,7 +211,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 6px 10px;
+  min-height: 34px;
   background: rgba(56, 189, 248, 0.1);
   border: 1px solid rgba(56, 189, 248, 0.3);
   color: #38bdf8;
@@ -202,9 +222,10 @@ body {
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
-  font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  font-family: inherit;
   transition: all 0.2s ease;
   margin-top: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .scan-current-btn:hover {
@@ -255,14 +276,18 @@ body {
   border: 1px solid #334155;
   color: #f8fafc;
   border-radius: 6px;
-  padding: 7px 10px;
-  font-size: 11.5px;
+  padding: 8px 10px;
+  min-height: 38px;
+  /* 16px font-size prevents iOS Safari from automatically zooming into the page on focus */
+  font-size: 16px;
   font-family: ui-monospace, SFMono-Regular, monospace;
   direction: ltr;
   text-align: left;
   outline: none;
   transition: all 0.2s ease;
   box-sizing: border-box;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .nabih-scan-input:focus {
@@ -272,10 +297,10 @@ body {
 
 .nabih-scan-input::placeholder {
   color: #64748b;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: inherit;
   direction: rtl;
   text-align: right;
-  font-size: 10.5px;
+  font-size: 12px;
 }
 
 .nabih-scan-input.invalid {
@@ -292,13 +317,15 @@ body {
   color: #ffffff;
   border: 1px solid #0284c7;
   border-radius: 6px;
-  padding: 7px 12px;
-  font-size: 11.5px;
+  padding: 8px 14px;
+  min-height: 38px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: inherit;
   transition: all 0.2s ease;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nabih-scan-go:hover {
@@ -360,11 +387,15 @@ body {
   background: transparent;
   border: none;
   color: #64748b;
-  font-size: 10.5px;
+  font-size: 11px;
   cursor: pointer;
   font-family: inherit;
   transition: color 0.15s;
-  padding: 2px 4px;
+  padding: 4px 8px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-clear-reports:hover {
@@ -378,6 +409,8 @@ body {
   max-height: 180px;
   overflow-y: auto;
   padding-left: 2px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .reports-empty {
@@ -444,6 +477,8 @@ body {
   text-overflow: ellipsis;
   direction: ltr;
   text-align: left;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .report-tag {
@@ -492,12 +527,16 @@ body {
 .report-link-btn {
   color: #38bdf8;
   text-decoration: none;
-  font-size: 10px;
-  padding: 2px 6px;
+  font-size: 10.5px;
+  padding: 4px 8px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
   border-radius: 4px;
   background: rgba(56, 189, 248, 0.08);
   border: 1px solid rgba(56, 189, 248, 0.25);
   transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .report-link-btn:hover {
@@ -511,9 +550,15 @@ body {
   border: none;
   color: #64748b;
   cursor: pointer;
-  font-size: 11px;
-  padding: 0 4px;
+  font-size: 13px;
+  padding: 4px 8px;
+  min-width: 32px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .report-delete-btn:hover {
@@ -605,8 +650,8 @@ body {
 
 .switch {
   position: relative;
-  width: 34px;
-  height: 18px;
+  width: 44px;
+  height: 24px;
   flex-shrink: 0;
 }
 
@@ -621,15 +666,15 @@ body {
   cursor: pointer;
   inset: 0;
   background: #334155;
-  border-radius: 18px;
+  border-radius: 24px;
   transition: 0.2s;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 12px;
-  width: 12px;
+  height: 18px;
+  width: 18px;
   right: 3px;
   bottom: 3px;
   background: #ffffff;
@@ -642,7 +687,7 @@ input:checked + .slider {
 }
 
 input:checked + .slider:before {
-  transform: translateX(-16px);
+  transform: translateX(-20px);
 }
 
 /* التذييل */
@@ -664,7 +709,7 @@ input:checked + .slider:before {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: 42px;
   padding: 8px 12px;
   margin: 10px 0;
   background: #0f172a;
@@ -676,10 +721,12 @@ input:checked + .slider:before {
   color: var(--accent, #38bdf8);
   text-align: center;
   direction: ltr;
+  -webkit-user-select: all;
+  user-select: all;
 }
 .temp-mail-placeholder { color: var(--muted, #94a3b8); font-family: inherit; font-size: 11.5px; }
 
-/* أزرار البريد المؤقت — متناسقة تماماً مع أسلوب وهوية الإضافة */
+/* أزرار البريد المؤقت — متناسقة تماماً مع أسلوب وهوية الإضافة ومبادئ اللمس في iOS */
 .temp-mail-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -693,9 +740,10 @@ input:checked + .slider:before {
   justify-content: center;
   gap: 6px;
   padding: 8px 10px;
+  min-height: 42px;
   border-radius: 6px;
   font-size: 11.5px;
-  font-family: "IBM Plex Sans Arabic", system-ui, -apple-system, sans-serif;
+  font-family: inherit;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -705,6 +753,7 @@ input:checked + .slider:before {
   color: #f1f5f9;
   width: 100%;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .temp-mail-actions button:hover:not(:disabled) {
@@ -780,11 +829,14 @@ input:checked + .slider:before {
 .temp-mail-messages {
   display: flex; flex-direction: column; gap: 8px; max-height: 220px;
   overflow-y: auto; margin-bottom: 10px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .temp-mail-msg {
   padding: 10px 12px; background: var(--surface, #0f1420);
   border: 1px solid var(--border, #2a3345); border-radius: 10px;
   cursor: pointer; transition: border-color .15s;
+  -webkit-tap-highlight-color: transparent;
 }
 .temp-mail-msg:hover { border-color: var(--accent, #4cc9f0); }
 .temp-mail-msg.unread { border-right: 3px solid var(--accent, #4cc9f0); }
@@ -793,22 +845,25 @@ input:checked + .slider:before {
 .temp-mail-msg small { font-size: 11px; color: var(--muted, #7b8494); }
 
 .temp-mail-note { font-size: 11px; color: var(--muted, #7b8494); line-height: 1.6; }
-.temp-mail-note a { color: var(--accent, #4cc9f0); text-decoration: none; }
+.temp-mail-note a { color: var(--accent, #4cc9f0); text-decoration: none; padding: 4px 0; display: inline-block; }
 /* جسم الرسالة الكاملة: روابط قابلة للنقر + كود التحقق + النص */
 .temp-mail-body { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border, #334155); }
 .temp-mail-links { display: flex; flex-direction: column; gap: 5px; }
 .temp-mail-link {
-  display: block; word-break: break-all; font-family: ui-monospace, SFMono-Regular, monospace;
+  display: flex; align-items: center; word-break: break-all; font-family: ui-monospace, SFMono-Regular, monospace;
   font-size: 11px; color: var(--accent, #4cc9f0); text-decoration: none;
   background: #0f172a; border: 1px solid var(--border, #334155); border-radius: 6px;
-  padding: 6px 8px;
+  padding: 8px 10px; min-height: 38px;
+  -webkit-tap-highlight-color: transparent;
 }
 .temp-mail-link:hover { border-color: var(--accent, #4cc9f0); background: rgba(56,189,248,.08); }
 .temp-mail-code {
   font-family: ui-monospace, SFMono-Regular, monospace; font-size: 20px; font-weight: 700;
   letter-spacing: 4px; text-align: center; color: #fbbf24;
-  background: #0f172a; border: 1px dashed #f59e0b; border-radius: 8px; padding: 8px;
-  cursor: pointer; user-select: all;
+  background: #0f172a; border: 1px dashed #f59e0b; border-radius: 8px; padding: 10px;
+  min-height: 44px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; -webkit-user-select: all; user-select: all;
+  -webkit-tap-highlight-color: transparent;
 }
 .temp-mail-code:hover { background: rgba(245,158,11,.12); }
 .temp-mail-pre {
@@ -816,6 +871,9 @@ input:checked + .slider:before {
   font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; line-height: 1.5;
   color: var(--muted, #94a3b8); background: #0f172a; border: 1px solid var(--border, #334155);
   border-radius: 6px; padding: 8px; margin: 0;
+  -webkit-overflow-scrolling: touch;
+  -webkit-user-select: text;
+  user-select: text;
 }
 .temp-mail-status {
   min-height: 16px; font-size: 11px; color: #34d399; text-align: center;

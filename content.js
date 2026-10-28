@@ -1,5 +1,43 @@
 
 
+// ============================================================
+// نبيه | Nabih - سكريبت حقن المحتوى (Content Script)
+// متوافق بالكامل مع معايير وإرشادات متصفح Safari على أنظمة iOS و iPadOS و macOS
+// ============================================================
+
+const api = typeof browser !== "undefined" && browser.runtime ? browser : (typeof chrome !== "undefined" ? chrome : null);
+
+// دالة نسخ نص موثوقة ومتوافقة مع قيود Safari على iOS (حيث تنتهي صلاحية إيماءة اللمس بعد العمليات غير المتزامنة)
+async function copyTextSafely(text) {
+  if (!text) return false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) {
+    // فشل الـ Clipboard API بسبب انتهاء User Activation في Safari
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    ta.style.left = "-9999px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, 99999);
+    const ok = document.execCommand("copy");
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 const CONFIGS = {
   email: {
     icon: "⚠️",
@@ -175,7 +213,7 @@ function fillPassword(targetInput, value) {
       }
     });
   }
-  navigator.clipboard.writeText(value).catch(() => {});
+  copyTextSafely(value).catch(() => {});
 }
 
 // ============================================================
@@ -227,7 +265,7 @@ function createTempMailBlock(targetInput) {
     targetInput.dispatchEvent(new Event("input", { bubbles: true }));
     targetInput.dispatchEvent(new Event("change", { bubbles: true }));
     targetInput.focus();
-    await navigator.clipboard.writeText(address).catch(() => {});
+    await copyTextSafely(address).catch(() => {});
     status("تمت تعبئة البريد في الحقل", true);
   };
   fillBtn.onclick = fillField;
@@ -251,7 +289,8 @@ function createTempMailBlock(targetInput) {
       let cache = null;
       const ensureFull = async () => {
         if (cache) return cache;
-        const r = await chrome.runtime.sendMessage({ type: "read", id: m.id });
+        if (!api?.runtime?.sendMessage) throw new Error("بيئة الإضافة غير متوفرة");
+        const r = await api.runtime.sendMessage({ type: "read", id: m.id });
         if (!r?.ok) throw new Error(r?.error || "لا استجابة");
         cache = r.data;
         if (!m.seen) { m.seen = true; row.classList.remove("nabih-tm-unread"); }
@@ -271,7 +310,7 @@ function createTempMailBlock(targetInput) {
           const fillValue = code || links[0] || full.text || "";
           targetInput.value = fillValue;
           targetInput.dispatchEvent(new Event("input", { bubbles: true }));
-          await navigator.clipboard.writeText(fillValue).catch(() => {});
+          await copyTextSafely(fillValue).catch(() => {});
 
           renderLinksUnder(row, full, links, code, status);
 
@@ -280,8 +319,12 @@ function createTempMailBlock(targetInput) {
           else status("تم النسخ", true);
 
           // فتح رابط التحقق في تبويب جديد (إن لم يكن النقر على رابط داخلي)
-          if (links.length && !ev.target.closest(".nabih-tm-link") && typeof chrome !== "undefined" && chrome.tabs?.create) {
-            chrome.tabs.create({ url: links[0], active: false });
+          if (links.length && !ev.target.closest(".nabih-tm-link")) {
+            if (api?.tabs?.create) {
+              api.tabs.create({ url: links[0], active: false });
+            } else {
+              window.open(links[0], "_blank", "noopener");
+            }
           }
         } catch (err) {
           status("خطأ: " + err.message, false);
@@ -310,7 +353,7 @@ function createTempMailBlock(targetInput) {
       c.className = "nabih-tm-code";
       c.textContent = code;
       c.title = "انقر لنسخ كود التحقق";
-      c.onclick = async (e) => { e.stopPropagation(); await navigator.clipboard.writeText(code); status(`تم نسخ الكود: ${code}`, true); };
+      c.onclick = async (e) => { e.stopPropagation(); await copyTextSafely(code); status(`تم نسخ الكود: ${code}`, true); };
       box.appendChild(c);
     }
     links.forEach(u => {
@@ -323,7 +366,7 @@ function createTempMailBlock(targetInput) {
       a.rel = "noopener noreferrer";
       a.onclick = (e) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(u);
+        copyTextSafely(u);
         status("تم نسخ الرابط", true);
       };
       box.appendChild(a);
@@ -336,7 +379,8 @@ function createTempMailBlock(targetInput) {
     createBtn.disabled = true;
     status("جاري الإنشاء…");
     try {
-      const r = await chrome.runtime.sendMessage({ type: "create" });
+      if (!api?.runtime?.sendMessage) throw new Error("بيئة الإضافة غير متوفرة");
+      const r = await api.runtime.sendMessage({ type: "create" });
       if (!r?.ok) throw new Error(r?.error || "لا استجابة");
       address = r.data.address;
       addrEl.textContent = address;
@@ -347,7 +391,7 @@ function createTempMailBlock(targetInput) {
       targetInput.value = address;
       targetInput.dispatchEvent(new Event("input", { bubbles: true }));
       targetInput.dispatchEvent(new Event("change", { bubbles: true }));
-      await chrome.storage.local.set({ nabihTempMail: address });
+      api.storage?.local?.set({ nabihTempMail: address });
       status("تم الإنشاء والتعبئة", true);
       inboxBtn.click();
     } catch (err) {
@@ -362,7 +406,8 @@ function createTempMailBlock(targetInput) {
     if (!address) return;
     status("جاري التحديث…");
     try {
-      const r = await chrome.runtime.sendMessage({ type: "inbox" });
+      if (!api?.runtime?.sendMessage) throw new Error("بيئة الإضافة غير متوفرة");
+      const r = await api.runtime.sendMessage({ type: "inbox" });
       if (!r?.ok) throw new Error(r?.error || "لا استجابة");
       render(r.data);
       status("تم التحديث");
@@ -373,14 +418,15 @@ function createTempMailBlock(targetInput) {
 
   const copy = async () => {
     if (!address) return;
-    await navigator.clipboard.writeText(address).catch(() => {});
+    await copyTextSafely(address).catch(() => {});
     status("تم نسخ العنوان");
   };
   addrEl.onclick = e => { e.stopPropagation(); copy(); };
   box.querySelector(".nabih-tm-copy").onclick = e => { e.stopPropagation(); copy(); };
 
   // استعادة العنوان السابق عند فتح التلميح
-  chrome.storage.local.get("nabihTempMail", ({ nabihTempMail }) => {
+  api?.storage?.local?.get("nabihTempMail", (res) => {
+    const nabihTempMail = res?.nabihTempMail;
     if (nabihTempMail) {
       address = nabihTempMail;
       addrEl.textContent = address;
@@ -734,9 +780,9 @@ async function loadSidebarFile() {
   sidebarLoadPromise = (async () => {
     try {
       let html = "";
-      if (typeof chrome !== "undefined" && chrome.runtime?.getURL) {
+      if (api?.runtime?.getURL) {
         try {
-          const url = chrome.runtime.getURL("sidebar.html");
+          const url = api.runtime.getURL("sidebar.html");
           const res = await fetch(url);
           if (res.ok) html = await res.text();
         } catch (e) { /* fallback */ }
@@ -875,10 +921,11 @@ function updateSidebarContent() {
       warn.querySelector(".nabih-payment-ignore").onchange = (e) => {
         if (!e.target.checked) return;
         const host = window.location.hostname;
-        chrome.storage.sync.get(["nabihSettings"], ({ nabihSettings: s = {} }) => {
+        api?.storage?.sync?.get(["nabihSettings"], (res) => {
+          const s = res?.nabihSettings || {};
           const ignored = new Set(s.ignoredPaymentSites || []);
           ignored.add(host);
-          chrome.storage.sync.set({ nabihSettings: { ...s, ignoredPaymentSites: [...ignored] } });
+          api?.storage?.sync?.set({ nabihSettings: { ...s, ignoredPaymentSites: [...ignored] } });
           PAYMENT_WARN = false;
           PAYMENT_TOAST = false;
           // إخفاء الإشعار المنبثق إن كان ظاهراً
@@ -1009,13 +1056,19 @@ function scanPage() {
   // تحديث حيّ لعداد "حقول الدفع" في النافذة المنبثقة (تتغير مع الحقول المتأخرة)
   if (hasNew) {
     const paymentCount = detectedFields.filter(i => i.type === "payment").length;
-    if (paymentCount > 0 && typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
-      chrome.runtime.sendMessage({ type: "UPDATE_PAYMENT_COUNT", paymentCount }).catch(() => {});
+    if (paymentCount > 0 && api?.runtime?.sendMessage) {
+      api.runtime.sendMessage({ type: "UPDATE_PAYMENT_COUNT", paymentCount }).catch(() => {});
     }
   }
 }
 
-// إغلاق التلميح عند النقر في الخارج
+// إغلاق التلميح عند النقر أو اللمس في الخارج — يدعم متصفح Safari على iOS حيث لا تُرسل نقرات الجسم تلقائياً
+document.addEventListener("pointerdown", (e) => {
+  if (tooltipEl && !tooltipEl.contains(e.target) && !e.target.closest(".nabih-badge")) {
+    hideTooltip();
+  }
+}, { passive: true });
+
 document.addEventListener("click", (e) => {
   if (tooltipEl && !tooltipEl.contains(e.target) && !e.target.closest(".nabih-badge")) {
     hideTooltip();
@@ -1038,20 +1091,26 @@ const observer = new MutationObserver((mutations) => {
   if (!isOurChange) scheduleScan();
 });
 
-// تحديث المواضع عند تغيير حجم الشاشة فقط
+// تحديث المواضع عند تغيير حجم الشاشة أو فتح لوحة المفاتيح الافتراضية في iOS
 let resizeTimer = null;
-window.addEventListener("resize", () => {
+function handleViewportChange() {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     if (settings.displayMode === "inline") {
       detectedFields.forEach(item => positionBadge(item.input, item.badge));
     }
   }, 150);
-}, { passive: true });
+}
+
+window.addEventListener("resize", handleViewportChange, { passive: true });
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", handleViewportChange, { passive: true });
+  window.visualViewport.addEventListener("scroll", handleViewportChange, { passive: true });
+}
 
 // التواصل مع نافذة الإضافة (Popup)
-if (typeof chrome !== "undefined" && chrome.runtime?.onMessage) {
-  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+if (api?.runtime?.onMessage) {
+  api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === "UPDATE_SETTINGS") {
       settings = { ...settings, ...msg.settings };
       applyDisplayMode();
@@ -1117,11 +1176,10 @@ function init() {
   }
 }
 
-
 let settingsLoaded = false;
 
-if (typeof chrome !== "undefined" && chrome.storage?.sync) {
-  chrome.storage.sync.get(["nabihSettings"], (res) => {
+if (api?.storage?.sync) {
+  api.storage.sync.get(["nabihSettings"], (res) => {
     if (res?.nabihSettings) {
       settings = { ...settings, ...res.nabihSettings };
       // تطبيق إعدادات تنبيه الدفع
@@ -1139,7 +1197,7 @@ if (typeof chrome !== "undefined" && chrome.storage?.sync) {
     init();
     ensurePaymentPageWarning();
   });
-  chrome.storage.onChanged.addListener((changes, area) => {
+  api.storage.onChanged?.addListener((changes, area) => {
     if (area !== "sync" || !changes.nabihSettings) return;
     settings = { ...settings, ...changes.nabihSettings.newValue };
     applyDisplayMode();

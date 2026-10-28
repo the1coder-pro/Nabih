@@ -45,16 +45,16 @@
 
 .nabih-toast {
   position: fixed;
-  top: 16px;
-  right: 16px;
+  top: max(16px, env(safe-area-inset-top, 16px));
+  right: max(16px, env(safe-area-inset-right, 16px));
   z-index: 2147483647;
   background: #0f172a;
   color: #f8fafc;
   border: 1px solid #334155;
   border-radius: 8px;
   padding: 12px 14px;
-  max-width: 360px;
-  
+  max-width: min(360px, calc(100vw - 32px));
+  box-sizing: border-box;
   font-size: 13px;
   line-height: 1.4;
   direction: rtl;
@@ -82,7 +82,13 @@
   cursor: pointer;
   font-size: 14px;
   padding: 0 4px;
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nabih-toast-close:hover { color: #ffffff; }
@@ -112,15 +118,18 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
+  padding: 4px 8px;
+  min-height: 28px;
   font-size: 11px;
   font-weight: 600;
   border-radius: 5px;
   cursor: pointer;
   border: 1px solid transparent;
+  -webkit-user-select: none;
   user-select: none;
   direction: rtl;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nabih-badge:hover { filter: brightness(0.95); }
@@ -128,7 +137,7 @@
 .nabih-badge-email { background: #fef3c7; color: #92400e; border-color: #fde68a; }
 .nabih-badge-phone, .nabih-badge-username { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
 .nabih-badge-payment { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
-.nabih-badge.compact { padding: 2px 5px; }
+.nabih-badge.compact { padding: 4px 6px; }
 .nabih-badge.compact .nabih-badge-text { display: none; }
 
 /* --- نافذة الإرشادات المنبثقة (Tooltip) --- */
@@ -141,11 +150,14 @@
   padding: 12px;
   border-radius: 8px;
   font-size: 12px;
-  width: 275px;
+  width: 285px;
+  max-width: min(290px, calc(100vw - 24px));
+  box-sizing: border-box;
   border: 1px solid #334155;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
   direction: rtl;
   text-align: right;
+  -webkit-overflow-scrolling: touch;
 }
 
 .nabih-tooltip.visible { display: block; }
@@ -181,12 +193,16 @@
   border: 1px solid #475569;
   color: #f8fafc;
   font-family: monospace;
-  font-size: 12px;
-  padding: 5px 8px;
+  /* 16px prevents iOS Safari automatic page zoom */
+  font-size: 16px;
+  padding: 6px 8px;
+  min-height: 38px;
   border-radius: 5px;
   outline: none;
   text-align: center;
   direction: ltr;
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 .nabih-pwd-refresh {
@@ -194,9 +210,15 @@
   border: 1px solid #475569;
   color: #ffffff;
   border-radius: 5px;
-  padding: 0 8px;
+  padding: 0 10px;
+  min-width: 38px;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nabih-pwd-refresh:hover { background: #475569; }
@@ -232,7 +254,7 @@
 
 .nabih-pwd-slider {
   flex: 1;
-  height: 4px;
+  height: 6px;
   cursor: pointer;
   accent-color: #0284c7;
   background: #334155;
@@ -250,17 +272,21 @@
 .nabih-pwd-chk {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   cursor: pointer;
   user-select: none;
-  font-size: 10.5px;
+  font-size: 11px;
   color: #94a3b8;
+  min-height: 28px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nabih-pwd-chk input {
   cursor: pointer;
   accent-color: #0284c7;
   margin: 0;
+  width: 16px;
+  height: 16px;
 }
 
 .nabih-pwd-fill {
@@ -269,11 +295,16 @@
   color: #ffffff;
   border: none;
   border-radius: 5px;
-  padding: 6px;
-  font-size: 11.5px;
+  padding: 8px;
+  min-height: 42px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nabih-pwd-fill:hover { background: #047857; }
@@ -284,7 +315,13 @@
   top: 0;
   right: -320px;
   width: 300px;
+  max-width: 85vw;
   height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
   background: #0f172a;
   color: #f8fafc;
   z-index: 2147483646;
@@ -295,6 +332,7 @@
   direction: rtl;
   text-align: right;
   box-shadow: -4px 0 16px rgba(0, 0, 0, 0.25);
+  -webkit-overflow-scrolling: touch;
 }
 
 .nabih-sidebar.open { right: 0; }
@@ -319,6 +357,12 @@
   color: #94a3b8;
   cursor: pointer;
   font-size: 16px;
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nabih-sidebar-close:hover { color: #ffffff; }
@@ -330,6 +374,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .nabih-sidebar-card {
@@ -355,11 +401,16 @@
   border: 1px solid #475569;
   color: #38bdf8;
   border-radius: 5px;
-  padding: 5px;
-  font-size: 11px;
+  padding: 8px 10px;
+  min-height: 36px;
+  font-size: 11.5px;
   cursor: pointer;
   margin-top: 4px;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nabih-focus-btn:hover { background: #475569; }
@@ -379,16 +430,20 @@
   transform: translateY(-50%);
   background: #0284c7;
   color: #ffffff;
-  padding: 8px 10px;
-  border-radius: 6px 0 0 6px;
+  padding: 10px 14px;
+  min-height: 44px;
+  min-width: 44px;
+  border-radius: 8px 0 0 8px;
   border: none;
   z-index: 2147483645;
   cursor: pointer;
   display: none;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
+  -webkit-user-select: none;
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nabih-sidebar-toggle:hover { background: #0369a1; }
@@ -401,7 +456,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-   font-family: "IBM Plex Sans Arabic", sans-serif;
+  font-family: inherit;
   font-weight: 400;
   font-style: normal;
 }
@@ -409,16 +464,19 @@
 .nabih-tm-head strong { color: #38bdf8; font-size: 12px; }
 .nabih-tm-copy {
   background: #334155; border: 1px solid #475569; color: #f8fafc;
-  border-radius: 5px; padding: 2px 7px; cursor: pointer; font-size: 12px;
+  border-radius: 5px; padding: 4px 8px; cursor: pointer; font-size: 13px;
+  min-width: 32px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
 }
 .nabih-tm-address {
   background: #0f172a; border: 1px solid #475569; color: #94a3b8;
-  border-radius: 5px; padding: 6px 8px; font-family: monospace;
-  font-size: 11.5px; word-break: break-all; cursor: pointer; text-align: left;
+  border-radius: 5px; padding: 8px 10px; font-family: monospace;
+  font-size: 12px; word-break: break-all; cursor: pointer; text-align: left;
+  min-height: 38px; -webkit-user-select: all; user-select: all;
 }
 .nabih-tm-address.nabih-tm-has { color: #4cc9f0; }
 .nabih-tm-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-.nabih-tm-actions button { flex: 1; min-width: 75px; }
+.nabih-tm-actions button { flex: 1; min-width: 75px; min-height: 38px; -webkit-tap-highlight-color: transparent; }
 .nabih-tm-actions .nabih-focus-btn { padding: 6px; font-size: 11px; }
 .nabih-tm-actions .nabih-tm-fill {
   background: rgba(16, 185, 129, 0.15);
@@ -436,10 +494,14 @@
 }
 .nabih-tm-meta { display: flex; justify-content: space-between; font-size: 10.5px; color: #94a3b8; }
 .nabih-tm-status { color: #34d399; }
-.nabih-tm-messages { display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto; }
+.nabih-tm-messages {
+  display: flex; flex-direction: column; gap: 5px; max-height: 150px; overflow-y: auto;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+}
 .nabih-tm-msg {
   background: #0f172a; border: 1px solid #334155; border-radius: 5px;
   padding: 6px 8px; cursor: pointer; font-size: 11px;
+  -webkit-tap-highlight-color: transparent;
 }
 .nabih-tm-msg:hover { border-color: #38bdf8; }
 .nabih-tm-msg.nabih-tm-unread { border-right: 2px solid #38bdf8; }
@@ -469,11 +531,12 @@
 .nabih-toast-payment {
   top: auto;
   right: auto;
-  bottom: 24px;
-  left: 24px;
+  bottom: max(24px, env(safe-area-inset-bottom, 24px));
+  left: max(16px, env(safe-area-inset-left, 16px));
   border-right: none;
   border-left: 3px solid #f59e0b;
-  max-width: 320px;
+  max-width: min(320px, calc(100vw - 32px));
+  box-sizing: border-box;
 }
 .nabih-toast-payment .nabih-toast-icon { font-size: 20px; }
 .nabih-toast-payment .nabih-toast-body strong { color: #fbbf24; }
@@ -482,15 +545,18 @@
 /* روابط الرسالة المستخرجة + كود التحقق (داخل تلميح البريد) */
 .nabih-tm-linkbox { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #334155; }
 .nabih-tm-link {
-  display: block; word-break: break-all; font-family: monospace; font-size: 10.5px;
+  display: flex; align-items: center; word-break: break-all; font-family: monospace; font-size: 11px;
   color: #38bdf8; text-decoration: none; background: #0f172a;
-  border: 1px solid #334155; border-radius: 5px; padding: 5px 7px;
+  border: 1px solid #334155; border-radius: 5px; padding: 6px 8px; min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
 }
 .nabih-tm-link:hover { border-color: #38bdf8; background: rgba(56,189,248,.1); }
 .nabih-tm-code {
-  font-family: monospace; font-size: 16px; font-weight: 700; letter-spacing: 3px;
+  font-family: monospace; font-size: 18px; font-weight: 700; letter-spacing: 3px;
   text-align: center; color: #fbbf24; background: #0f172a; border: 1px dashed #f59e0b;
-  border-radius: 6px; padding: 6px; cursor: pointer; user-select: all;
+  border-radius: 6px; padding: 8px; min-height: 44px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; -webkit-user-select: all; user-select: all;
+  -webkit-tap-highlight-color: transparent;
 }
 .nabih-tm-code:hover { background: rgba(245,158,11,.12); }
 
@@ -498,15 +564,16 @@
 .nabih-scan-form { display: flex; gap: 6px; margin-top: 8px; }
 .nabih-scan-input {
   flex: 1; min-width: 0; background: #0f172a; border: 1px solid #475569; color: #f8fafc;
-  border-radius: 5px; padding: 6px 8px; font-size: 12px; font-family: monospace;
-  direction: ltr; text-align: left; outline: none;
+  border-radius: 5px; padding: 8px 10px; min-height: 38px; font-size: 16px; font-family: monospace;
+  direction: ltr; text-align: left; outline: none; -webkit-user-select: text; user-select: text;
 }
 .nabih-scan-input:focus { border-color: #38bdf8; }
-.nabih-scan-input::placeholder { color: #64748b; font-family: "IBM Plex Sans Arabic", sans-serif; direction: rtl; }
+.nabih-scan-input::placeholder { color: #64748b; font-family: inherit; direction: rtl; font-size: 12px; }
 .nabih-scan-input.invalid { border-color: #ef4444; }
 .nabih-scan-go {
-  background: #0284c7; color: #fff; border: none; border-radius: 5px; padding: 0 12px;
-  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  background: #0284c7; color: #fff; border: none; border-radius: 5px; padding: 8px 14px;
+  min-height: 38px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
 }
 .nabih-scan-go:hover { background: #0369a1; }
 .nabih-scan-error { margin: 4px 0 0; min-height: 14px; font-size: 11px; color: #fca5a5; }

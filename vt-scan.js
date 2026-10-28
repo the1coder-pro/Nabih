@@ -1,4 +1,5 @@
 // Browser (extension page) version of the VirusTotal URL scanner.
+const api = typeof browser !== "undefined" && browser.runtime ? browser : (typeof chrome !== "undefined" ? chrome : {});
 const API_BASE = "https://www.virustotal.com/api/v3";
 const API_KEY = "53fb04d0231ebd495aeb9a34c33d43c266b410472a158952bf347f5fd887eb4e"; // demo only
 const POLL_INTERVAL_MS = 15_000; // free tier allows 4 requests/min
@@ -88,11 +89,11 @@ function saveScanReport(url, json) {
       rawJson: json
     };
 
-    if (typeof chrome !== "undefined" && chrome.storage?.local) {
-      chrome.storage.local.get(["nabihScanReports"], (res) => {
+    if (api.storage?.local) {
+      api.storage.local.get(["nabihScanReports"], (res) => {
         const list = Array.isArray(res?.nabihScanReports) ? res.nabihScanReports : [];
         const updated = [report, ...list.filter(item => item.url !== url)].slice(0, 30);
-        chrome.storage.local.set({ nabihScanReports: updated });
+        api.storage.local.set({ nabihScanReports: updated });
       });
     }
   } catch (err) {
@@ -165,8 +166,8 @@ async function main() {
 
   const force = new URLSearchParams(location.search).get("force") === "1";
 
-  if (!force && typeof chrome !== "undefined" && chrome.storage?.local) {
-    chrome.storage.local.get(["nabihScanReports"], (res) => {
+  if (!force && api.storage?.local) {
+    api.storage.local.get(["nabihScanReports"], (res) => {
       const list = res?.nabihScanReports || [];
       const cached = list.find(r => r.url === currentUrl);
       if (cached && cached.rawJson && (Date.now() - (cached.timestamp || 0) < 1800000)) {
